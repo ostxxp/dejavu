@@ -69,3 +69,11 @@ Native references: [NSPasteboard.changeCount](https://developer.apple.com/docume
 Analyze uses the common LanguageAnalysisService and cache, with at most two concurrent analyses and 20 accepted analysis requests per minute. Responses carry a temporary UUID plus the shared structured analysis. Save accepts only such a UUID, never an arbitrary client-supplied analysis. The issued-analysis store is memory-only, bounded to 100 entries with a 30-minute lifetime. Successful history uses the Chrome selection source and respects the global history setting/revision. Provider failures become conservative Russian JSON errors.
 
 References: [NWParameters.requiredLocalEndpoint](https://developer.apple.com/documentation/network/nwparameters/requiredlocalendpoint), [NWListener](https://developer.apple.com/documentation/network/nwlistener), [SecRandomCopyBytes](https://developer.apple.com/documentation/security/secrandomcopybytes(_:_:_:)).
+
+## Chrome extension
+
+Manifest V3 uses a module service worker, a top-frame isolated content script and a closed Shadow DOM. Selection detection uses the browser language detector with a small explicit whitelist for short French expressions. Only a trusted click sends the selected text to the local bridge. Input/editable/code selections are excluded. DOM rendering uses textContent and element creation, without HTML interpolation.
+
+The service worker owns local pairing storage, restricted to TRUSTED_CONTEXTS before processing messages; content scripts receive only public configuration. Popup operations require the exact extension popup URL. Page operations require the extension sender ID, a top-level HTTP(S) document and enabled domain policy. Save/listen IDs are scoped to tab and document, bounded and expire after 30 minutes. Session updates are serialized to preserve concurrent results. Cancellation, transport timeout and configuration rechecks suppress late responses.
+
+French speech uses a local Chrome TTS voice. The native app registers dejavu://open for the popup link. No provider key, complete page content, remote assets or analytics enter the extension. See chrome-extension/README.md for storage and permission details.

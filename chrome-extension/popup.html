@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DéjàVu</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+<header><h1>DéjàVu</h1><p>Французский рядом</p></header>
+<p id="status" role="status">Проверяем подключение…</p>
+<label class="toggle">Разбор выделенного <input id="enabled" type="checkbox"></label>
+<button id="recheck">Проверить подключение</button>
+<details id="pairing"><summary>Подключить к Mac</summary>
+<p>Откройте DéjàVu → Настройки → Расширение Chrome. Укажите этот ID и включите подключение:</p>
+<code id="extension-id"></code>
+<label for="code">Код подключения из приложения</label>
+<input id="code" type="password" autocomplete="off" spellcheck="false" placeholder="Ключ OpenAI сюда не нужен">
+<button id="connect">Подключить</button><button id="disconnect" class="secondary">Забыть подключение</button>
+</details>
+<details><summary>Исключённые сайты</summary><p>По одному домену на строку. Поддомены тоже будут исключены.</p>
+<textarea id="domains" rows="4" aria-label="Исключённые сайты" placeholder="example.com"></textarea>
+<button id="block-current" class="secondary">Не разбирать на этом сайте</button><button id="save-domains">Сохранить список</button>
+</details>
+<p id="message" role="status"></p>
+<a class="open" href="dejavu://open" target="_blank" rel="noreferrer">Открыть DéjàVu</a>
+<p class="privacy">В приложение отправляется только выделенный текст после нажатия «Разобрать». Код подключения недоступен страницам. Расширение не работает в полях ввода и на внутренних страницах Chrome.</p>
+<script type="module" src="popup.js"></script>
+</body></html>

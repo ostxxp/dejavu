@@ -113,7 +113,7 @@ struct SettingsView: View {
             }
             Section("О приложении") {
                 LabeledContent("Приложение", value: "DéjàVu")
-                LabeledContent("Версия", value: "0.4.0")
+                LabeledContent("Версия", value: "0.5.0")
                 Text("Французский для жизни. Для русскоязычного ученика A2 → B1.")
                     .foregroundStyle(.secondary)
             }

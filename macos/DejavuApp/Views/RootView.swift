@@ -30,6 +30,11 @@ struct RootView: View {
         }
         .frame(minWidth: 820, minHeight: 600)
         .tint(.accentColor)
+        .onOpenURL { url in
+            guard url.scheme == "dejavu", url.host == "open", url.query == nil else { return }
+            openWindow(id: "main")
+            NSApp.activate(ignoringOtherApps: true)
+        }
         .onAppear {
             app.openSettingsWindow = {
                 openWindow(id: "settings")

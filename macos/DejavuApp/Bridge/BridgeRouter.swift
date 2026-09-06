@@ -59,7 +59,7 @@ import Foundation
 
     private func route(_ request: BridgeRequest) async -> BridgeResponse {
         if request.path == "/v1/health", request.method == "GET" {
-            return .json(["status": "ok", "version": "1", "appVersion": "0.4.0"])
+            return .json(["status": "ok", "version": "1", "appVersion": "0.5.0"])
         }
         guard ["/v1/analyze", "/v1/save"].contains(request.path) else { return .error(404, "not_found", "Такого действия нет.") }
         guard request.method == "POST" else { return .error(405, "method_not_allowed", "Используйте POST.") }
