@@ -7,6 +7,8 @@ import SwiftData
     private let record: AppSettings
     private(set) var historyRevision = 0
     private(set) var clipboardRevision = 0
+    var bridgeEnabled: Bool { record.bridgeEnabled }
+    var bridgeExtensionID: String { record.bridgeExtensionID }
     var clipboardEnabled: Bool { record.clipboardEnabled }
     var clipboardAutomatic: Bool { record.clipboardAutomatic }
     var clipboardShowPanel: Bool { record.clipboardShowPanel }
@@ -26,6 +28,14 @@ import SwiftData
             context.insert(record)
             try PersistenceController.save(context)
         }
+    }
+
+    func updateBridge(enabled: Bool, extensionID: String) throws {
+        let id = extensionID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard id.isEmpty || id.range(of: "^[a-p]{32}$", options: .regularExpression) != nil else { throw AppError.invalidExtensionID }
+        record.bridgeEnabled = enabled
+        record.bridgeExtensionID = id
+        try PersistenceController.save(context)
     }
 
     func updateClipboard(enabled: Bool, automatic: Bool, showPanel: Bool, history: Bool) throws {

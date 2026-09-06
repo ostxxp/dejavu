@@ -1,4 +1,4 @@
-# DéjàVu architecture — phases 1–3
+# DéjàVu architecture — phases 1–4
 
 ## Runtime
 
@@ -30,9 +30,9 @@ Keychain uses a non-synchronizing generic password accessible when the device is
 
 ## Scope boundaries
 
-Phase 2 implements the global shortcut, NSPanel, cache, speech and follow-up. Phase 3 implements opt-in pasteboard handling. Phase 4 introduces an authenticated loopback bridge. Phase 5 implements Chrome. Phase 6 adds mini-dialogues. Phase 7 polishes onboarding, permissions and visual consistency.
+Phase 2 implements the global shortcut, NSPanel, cache, speech and follow-up. Phase 3 implements opt-in pasteboard handling. Phase 4 implements an authenticated loopback bridge. Phase 5 implements Chrome. Phase 6 adds mini-dialogues. Phase 7 polishes onboarding, permissions and visual consistency.
 
-There is no HTTP listener, speech capture, telemetry, authentication, cloud database or production mock. The app sandbox currently grants only outbound network access. New permissions must be added only with their owning feature.
+There is no speech capture, telemetry, user-account authentication, cloud database or production mock. The app sandbox grants outbound network access and, from phase 4, inbound networking for the loopback listener. New permissions must be added only with their owning feature.
 
 ## Quick assistant
 
@@ -57,3 +57,15 @@ There is no HTTP listener, speech capture, telemetry, authentication, cloud data
 `ClipboardPanelController` owns one nonactivating panel. Presentation does not make it key; controls may take focus on deliberate interaction. New content replaces old content, with bounded scrolling and detailed view. The panel expires after 20 seconds for results or 60 seconds for candidates/errors, paused while hovered or loading. Expiration releases candidate/result memory even when popup display is disabled. A menu action can reveal current content while available. Settings fields have migration defaults: disabled, no automatic upload, panel enabled, clipboard history enabled (still subject to global history).
 
 Native references: [NSPasteboard.changeCount](https://developer.apple.com/documentation/appkit/nspasteboard/changecount), [NLLanguageRecognizer](https://developer.apple.com/documentation/naturallanguage/nllanguagerecognizer). Checked against Apple documentation during phase 3.
+
+## Browser bridge
+
+`LocalHTTPServer` uses Network.framework with `requiredLocalEndpoint` explicitly set to IPv4 `127.0.0.1`, fixed production port 17389. No Bonjour service, wildcard bind or LAN interface is used. The incoming peer is checked as IPv4 loopback too. It supports a single bounded HTTP/1.1 request per connection, at most 16 connections, a ten-second read deadline and a 95-second operation deadline. Disconnect/disable cancels request tasks. `BridgeHTTPParser` rejects duplicate headers, transfer encoding, missing POST lengths, oversized headers/bodies and pipelined bytes.
+
+`BridgeRouter` is separate from transport so a future Native Messaging adapter can reuse application operations. The literal Host must match the loopback address and port. Every operation, including health, requires a bearer pairing code. Browser Origin must exactly match the configured extension ID; there is no wildcard CORS. An originless native client still needs authentication. Only the matching extension receives unauthenticated preflight responses, which contain no application data.
+
+`BrowserBridge` generates a 256-bit random token with SecRandomCopyBytes and stores it under a separate Keychain service/account. Provider credentials retain their existing service and account. Starting, disabling or rotating the bridge invalidates issued results and pending requests; it never logs headers, input, results or codes. Clearing history also invalidates pending/issued bridge results. The UI only reveals a pairing code after a deliberate action and clears it on disappearance or stop. Clipboard copies carry a concealed marker.
+
+Analyze uses the common LanguageAnalysisService and cache, with at most two concurrent analyses and 20 accepted analysis requests per minute. Responses carry a temporary UUID plus the shared structured analysis. Save accepts only such a UUID, never an arbitrary client-supplied analysis. The issued-analysis store is memory-only, bounded to 100 entries with a 30-minute lifetime. Successful history uses the Chrome selection source and respects the global history setting/revision. Provider failures become conservative Russian JSON errors.
+
+References: [NWParameters.requiredLocalEndpoint](https://developer.apple.com/documentation/network/nwparameters/requiredlocalendpoint), [NWListener](https://developer.apple.com/documentation/network/nwlistener), [SecRandomCopyBytes](https://developer.apple.com/documentation/security/secrandomcopybytes(_:_:_:)).

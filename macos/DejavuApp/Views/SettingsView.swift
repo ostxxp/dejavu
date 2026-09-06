@@ -95,6 +95,7 @@ struct SettingsView: View {
                 Text("Если окно скрыто, последний текст или ответ можно открыть из меню DéjàVu. История записывается только при включённой общей истории. Произвольное содержимое буфера не сохраняется. Для чтения буфера не нужен доступ к Универсальному доступу или микрофону; если macOS запросит доступ к вставке, решение остаётся за вами.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            BrowserBridgeSettings()
             Section("Конфиденциальность") {
                 Toggle("Сохранять историю успешных разборов", isOn: $saveHistory)
                     .onChange(of: saveHistory) { _, value in
@@ -112,7 +113,7 @@ struct SettingsView: View {
             }
             Section("О приложении") {
                 LabeledContent("Приложение", value: "DéjàVu")
-                LabeledContent("Версия", value: "0.3.0")
+                LabeledContent("Версия", value: "0.4.0")
                 Text("Французский для жизни. Для русскоязычного ученика A2 → B1.")
                     .foregroundStyle(.secondary)
             }

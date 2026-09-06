@@ -74,6 +74,8 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
     var providerRaw: String
     var model: String
     var saveHistory: Bool
+    var bridgeEnabled: Bool = false
+    var bridgeExtensionID: String = ""
     var clipboardEnabled: Bool = false
     var clipboardAutomatic: Bool = false
     var clipboardShowPanel: Bool = true

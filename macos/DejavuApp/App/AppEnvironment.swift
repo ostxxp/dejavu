@@ -34,6 +34,7 @@ enum AppSection: String, CaseIterable, Identifiable {
     let speech: SpeechService
     let commandPaletteModel: CommandPaletteModel
     let clipboardModel: ClipboardModel
+    let browserBridge: BrowserBridge
     @ObservationIgnored lazy var clipboardMonitor = ClipboardMonitor()
     @ObservationIgnored lazy var clipboardPanel = ClipboardPanelController(app: self)
     private var integrationStarted = false
@@ -57,6 +58,7 @@ enum AppSection: String, CaseIterable, Identifiable {
                                                   queryHistory: CommandPaletteHistoryStore(context: container.mainContext),
                                                   settings: settings, speech: speech)
         clipboardModel = ClipboardModel(service: analysisService, settings: settings, history: history)
+        browserBridge = BrowserBridge(settings: settings, service: analysisService, history: history, vocabulary: vocabulary)
     }
 
     func configureClipboard() {
@@ -89,12 +91,14 @@ enum AppSection: String, CaseIterable, Identifiable {
     func startSystemIntegration() {
         guard !inMemory, !integrationStarted else { return }
         integrationStarted = true
+        browserBridge.startIfEnabled()
         commandPalette.start()
         configureClipboard()
     }
 
     func clearHistory() throws {
         try history.clear()
+        browserBridge.clearResults()
         clipboardModel.clear()
         manualAnalysis.cancel()
         commandPaletteModel.clear()

@@ -9,9 +9,12 @@ import Security
 
 @MainActor final class KeychainService: APIKeyStore {
     private let service: String
-    private let account = "api-key"
+    private let account: String
 
-    init(service: String = "com.dejavu.mac.openai") { self.service = service }
+    init(service: String = "com.dejavu.mac.openai", account: String = "api-key") {
+        self.service = service
+        self.account = account
+    }
 
     private var query: [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,
