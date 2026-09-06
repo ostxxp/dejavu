@@ -74,6 +74,10 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
     var providerRaw: String
     var model: String
     var saveHistory: Bool
+    var clipboardEnabled: Bool = false
+    var clipboardAutomatic: Bool = false
+    var clipboardShowPanel: Bool = true
+    var clipboardHistory: Bool = true
 
     init() {
         identifier = "default"

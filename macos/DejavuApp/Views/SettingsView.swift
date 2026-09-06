@@ -76,6 +76,25 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
                 Button("Очистить кэш ответов") { app.analysisService.clearCache(); notice = "Кэш очищен" }
             }
+            Section("Разбор скопированного") {
+                if let error = app.clipboardSettingsError { Text(error).foregroundStyle(.red) }
+                Toggle("Включить разбор скопированного", isOn: Binding(
+                    get: { app.settings.clipboardEnabled },
+                    set: { value in perform { try app.setClipboard(enabled: value) } }))
+                Toggle("Автоматически разбирать французский текст", isOn: Binding(
+                    get: { app.settings.clipboardAutomatic },
+                    set: { value in perform { try app.setClipboard(automatic: value) } }))
+                Toggle("Показывать всплывающее окно", isOn: Binding(
+                    get: { app.settings.clipboardShowPanel },
+                    set: { value in perform { try app.setClipboard(showPanel: value) } }))
+                Toggle("Сохранять историю разборов скопированного", isOn: Binding(
+                    get: { app.settings.clipboardHistory },
+                    set: { value in perform { try app.setClipboard(history: value) } }))
+                Text("После включения проверяются только новые копирования. Язык определяется на этом Mac. Авторазбор отправляет вероятно французский текст до 500 символов в OpenAI; более длинный текст (до 4 000) требует нажатия «Разобрать». Не копируйте личные данные при включённом авторазборе: определение языка не распознаёт все секреты.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Text("Если окно скрыто, последний текст или ответ можно открыть из меню DéjàVu. История записывается только при включённой общей истории. Произвольное содержимое буфера не сохраняется. Для чтения буфера не нужен доступ к Универсальному доступу или микрофону; если macOS запросит доступ к вставке, решение остаётся за вами.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Конфиденциальность") {
                 Toggle("Сохранять историю успешных разборов", isOn: $saveHistory)
                     .onChange(of: saveHistory) { _, value in
@@ -87,13 +106,13 @@ struct SettingsView: View {
                     }
                 Text("История и сохранённые выражения хранятся только на этом Mac. Если история выключена, разбор останется только на экране, пока вы сами его не сохраните.")
                 Text("История включает до 100 успешных вопросов помощника и контекст уточнений. Она управляется тем же переключателем. Кэш ответов остаётся только в памяти; его можно очистить отдельно.")
-                Text("Текст отправляется в OpenAI только по вашему запросу. Сохранение ответа на стороне API отключено; обработка данных поставщиком регулируется его политикой.")
-                Text("Буфер обмена не отслеживается. Доступ к микрофону, выделенному тексту и страницам браузера не запрашивается.")
+                Text("Текст отправляется в OpenAI по вашему запросу или при включённом авторазборе скопированного. Сохранение ответа на стороне API отключено; обработка данных поставщиком регулируется его политикой.")
+                Text("Буфер обмена проверяется только при включённом разборе скопированного. Доступ к микрофону, выделенному тексту и страницам браузера не запрашивается.")
                 Button("Очистить историю…", role: .destructive) { clearConfirmation = true }
             }
             Section("О приложении") {
                 LabeledContent("Приложение", value: "DéjàVu")
-                LabeledContent("Версия", value: "0.2.0")
+                LabeledContent("Версия", value: "0.3.0")
                 Text("Французский для жизни. Для русскоязычного ученика A2 → B1.")
                     .foregroundStyle(.secondary)
             }

@@ -1,4 +1,4 @@
-# DéjàVu architecture — phases 1–2
+# DéjàVu architecture — phases 1–3
 
 ## Runtime
 
@@ -30,9 +30,9 @@ Keychain uses a non-synchronizing generic password accessible when the device is
 
 ## Scope boundaries
 
-Phase 2 implements the global shortcut, NSPanel, cache, speech and follow-up. Phase 3 introduces opt-in pasteboard handling. Phase 4 introduces an authenticated loopback bridge. Phase 5 implements Chrome. Phase 6 adds mini-dialogues. Phase 7 polishes onboarding, permissions and visual consistency.
+Phase 2 implements the global shortcut, NSPanel, cache, speech and follow-up. Phase 3 implements opt-in pasteboard handling. Phase 4 introduces an authenticated loopback bridge. Phase 5 implements Chrome. Phase 6 adds mini-dialogues. Phase 7 polishes onboarding, permissions and visual consistency.
 
-There is no listener, pasteboard monitor, speech capture, telemetry, authentication, cloud database or production mock. The app sandbox currently grants only outbound network access. New permissions must be added only with their owning feature.
+There is no HTTP listener, speech capture, telemetry, authentication, cloud database or production mock. The app sandbox currently grants only outbound network access. New permissions must be added only with their owning feature.
 
 ## Quick assistant
 
@@ -45,3 +45,15 @@ There is no listener, pasteboard monitor, speech capture, telemetry, authenticat
 `LanguageAnalysisService` shares an in-memory LRU cache between the main window and panel: 100 results, fixed 30-minute lifetime. Identity includes provider, model, trimmed query and full context, preserving accents and case. Refresh bypasses cache; clearing advances a generation so outstanding requests cannot repopulate a cleared cache. Connection checks bypass it. It is never serialized to disk.
 
 `SpeechService` uses `AVSpeechSynthesizer` with an installed fr-FR voice, stopping prior speech before a new utterance. Missing voice availability produces a Russian error. No microphone permission or third-party speech API is involved.
+
+## Clipboard analysis
+
+`ClipboardMonitor` checks `NSPasteboard.changeCount` every 600 ms only while enabled. It establishes the current count as a baseline without reading the existing contents. One stable interval debounces new changes. A change invalidates prior work immediately; a second count check after reading rejects a clipboard replaced during the read. The system adapter rejects concealed/transient/generated markers, files and copies originating from DéjàVu. Tests use a private named pasteboard, never the user's general clipboard.
+
+`ClipboardPolicy` enforces bounded input (4,000 characters / 24 KB), excludes common credentials and technical content, then requires French to be the dominant language with confidence at least 0.8 from unconstrained `NLLanguageRecognizer`. No language hints force a French classification. This intentionally misses some ambiguous short words and cannot identify all sensitive prose. A bounded in-memory SHA256 set suppresses repeats for ten minutes. No arbitrary clipboard value or hash is persisted.
+
+`ClipboardModel` keeps only the current eligible candidate, requiring confirmation unless auto-analysis is enabled and the text is at most 500 characters. It reuses the shared service/cache and stores only successful structured analysis with the clipboard source, never a command-query record. Both global and clipboard history switches apply. Request identities, cancellation and setting revisions prevent late results from appearing or being saved after disabling. Any clipboard option change stops reading and cancels current work; persistence failures leave monitoring stopped and display an error.
+
+`ClipboardPanelController` owns one nonactivating panel. Presentation does not make it key; controls may take focus on deliberate interaction. New content replaces old content, with bounded scrolling and detailed view. The panel expires after 20 seconds for results or 60 seconds for candidates/errors, paused while hovered or loading. Expiration releases candidate/result memory even when popup display is disabled. A menu action can reveal current content while available. Settings fields have migration defaults: disabled, no automatic upload, panel enabled, clipboard history enabled (still subject to global history).
+
+Native references: [NSPasteboard.changeCount](https://developer.apple.com/documentation/appkit/nspasteboard/changecount), [NLLanguageRecognizer](https://developer.apple.com/documentation/naturallanguage/nllanguagerecognizer). Checked against Apple documentation during phase 3.

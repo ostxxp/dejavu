@@ -6,6 +6,11 @@ import SwiftData
     private let context: ModelContext
     private let record: AppSettings
     private(set) var historyRevision = 0
+    private(set) var clipboardRevision = 0
+    var clipboardEnabled: Bool { record.clipboardEnabled }
+    var clipboardAutomatic: Bool { record.clipboardAutomatic }
+    var clipboardShowPanel: Bool { record.clipboardShowPanel }
+    var clipboardHistory: Bool { record.clipboardHistory }
     var provider: AIProvider { AIProvider(rawValue: record.providerRaw) ?? .openAI }
     var model: String { record.model }
     var saveHistory: Bool { record.saveHistory }
@@ -21,6 +26,15 @@ import SwiftData
             context.insert(record)
             try PersistenceController.save(context)
         }
+    }
+
+    func updateClipboard(enabled: Bool, automatic: Bool, showPanel: Bool, history: Bool) throws {
+        clipboardRevision += 1
+        record.clipboardEnabled = enabled
+        record.clipboardAutomatic = automatic
+        record.clipboardShowPanel = showPanel
+        record.clipboardHistory = history
+        try PersistenceController.save(context)
     }
 
     func update(provider: AIProvider, model: String, saveHistory: Bool) throws {

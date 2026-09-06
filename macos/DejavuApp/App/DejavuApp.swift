@@ -70,6 +70,16 @@ private struct MenuBarContent: View {
     var body: some View {
         Button("Открыть DéjàVu") { show(.home) }
         Button("Быстрый помощник") { bootstrap.environment?.commandPalette.show() }
+        if let app = bootstrap.environment {
+            Toggle("Разбор скопированного", isOn: Binding(
+                get: { app.settings.clipboardEnabled },
+                set: { value in
+                    do { try app.setClipboard(enabled: value) }
+                    catch { show(.settings) }
+                }))
+            Button("Последний разбор скопированного") { app.clipboardPanel.show() }
+                .disabled(!app.clipboardModel.hasContent)
+        }
         Button("Сохранённое") { show(.saved) }
         Button("История") { show(.history) }
         Divider()
