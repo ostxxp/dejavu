@@ -41,3 +41,15 @@ __pycache__/
 *.sqlite
 *.sqlite3
 .codex/
+
+# Xcode and local application data
+DerivedData/
+.build/
+xcuserdata/
+*.xcuserstate
+*.xcresult
+*.store
+*.store-shm
+*.store-wal
+*.app/
+*.dSYM/

@@ -1,0 +1,172 @@
+{
+  "type": "object",
+  "properties": {
+    "original": {
+      "type": "string"
+    },
+    "translation": {
+      "type": "string"
+    },
+    "ipa": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lemma": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "partOfSpeech": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "gender": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "article": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "plural": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "verbForm": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "infinitive": {
+              "type": "string"
+            },
+            "tense": {
+              "type": "string"
+            },
+            "person": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "infinitive",
+            "tense",
+            "person"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "grammar": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "explanation"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 4
+    },
+    "chunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "explanation"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 4
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fr": {
+            "type": "string"
+          },
+          "translation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fr",
+          "translation"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 2
+    },
+    "difficulty": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1",
+        "C2",
+        null
+      ]
+    },
+    "naturalnessNotes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "original",
+    "translation",
+    "ipa",
+    "lemma",
+    "partOfSpeech",
+    "gender",
+    "article",
+    "plural",
+    "verbForm",
+    "grammar",
+    "chunks",
+    "examples",
+    "difficulty",
+    "naturalnessNotes"
+  ],
+  "additionalProperties": false
+}
