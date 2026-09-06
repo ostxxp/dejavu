@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Check staged blobs without printing potentially sensitive contents."""
+import re
+import subprocess
+import sys
+
+
+def git(*args):
+    return subprocess.check_output(["git", *args])
+
+
+patterns = [
+    rb"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----",
+    rb"gh[pousr]_[A-Za-z0-9]{30,}",
+    rb"github_pat_[A-Za-z0-9_]{40,}",
+    rb"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b",
+    rb"\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}",
+    rb"\bxox[baprs]-[A-Za-z0-9-]{20,}",
+    rb"\bAIza[A-Za-z0-9_-]{35}\b",
+    rb"(?i)(?:api[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]\s*[\"\'](?!your[_-]|example|placeholder|changeme|<)[A-Za-z0-9_+/=-]{16,}[\"\']",
+]
+blocked = []
+paths = git("diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z").split(b"\0")
+for raw in filter(None, paths):
+    path = raw.decode("utf-8", "surrogateescape")
+    name = path.rsplit("/", 1)[-1].lower()
+    secret_name = (
+        (name == ".env" or name.startswith(".env."))
+        and name not in {".env.example", ".env.sample"}
+    ) or name.endswith((".pem", ".key", ".p12", ".pfx", ".keystore")) or (
+        name.startswith(("id_rsa", "id_ed25519", "credentials"))
+        or "service-account" in name
+        or name in {".npmrc", ".netrc"}
+        or any(part in {".secrets", "secrets", ".aws", ".ssh"} for part in path.split("/"))
+    )
+    content = git("show", ":" + path)
+    if secret_name or any(re.search(pattern, content) for pattern in patterns):
+        blocked.append(path)
+
+if blocked:
+    print("Commit blocked: possible secrets in staged files:", file=sys.stderr)
+    for path in blocked:
+        print("  " + repr(path), file=sys.stderr)
+    print("Remove secrets from the staged changes before committing.", file=sys.stderr)
+    sys.exit(1)

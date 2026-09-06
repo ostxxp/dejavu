@@ -1,0 +1,43 @@
+# Local secrets and credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+id_ed25519*
+credentials.json
+credentials-*.json
+service-account*.json
+*service-account*.json
+.secrets/
+secrets/
+.aws/
+.ssh/
+.npmrc
+.netrc
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Local tooling, logs and OS files
+.DS_Store
+.idea/
+.vscode/
+*.log
+*.sqlite
+*.sqlite3
+.codex/
