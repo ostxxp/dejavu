@@ -4,6 +4,7 @@ enum AppError: Error, LocalizedError, Equatable {
     case missingAPIKey, invalidAPIKey, keychain, invalidModel, invalidInput
     case unauthorized, rateLimited, network, timedOut, unavailable
     case invalidResponse, incompleteResponse, refused, storage
+    case missingFrenchVoice
 
     var errorDescription: String? {
         switch self {
@@ -21,6 +22,7 @@ enum AppError: Error, LocalizedError, Equatable {
         case .incompleteResponse: "Разбор получился неполным. Сократите запрос и попробуйте ещё раз."
         case .refused: "Сервис не смог разобрать этот запрос. Попробуйте другое выражение."
         case .storage: "Не удалось сохранить данные на этом Mac. Проверьте свободное место и повторите попытку."
+        case .missingFrenchVoice: "Французский голос недоступен. Загрузите голос для французского языка Франции в настройках универсального доступа macOS."
         }
     }
 

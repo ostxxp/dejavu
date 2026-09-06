@@ -31,9 +31,15 @@ enum AppSection: String, CaseIterable, Identifiable {
     let keychain: KeychainService
     let analysisService: LanguageAnalysisService
     let manualAnalysis: ManualAnalysisModel
+    let speech: SpeechService
+    let commandPaletteModel: CommandPaletteModel
+    private let inMemory: Bool
+    @ObservationIgnored lazy var commandPalette = CommandPaletteController(app: self)
+    @ObservationIgnored var openSettingsWindow: (() -> Void)?
     var section: AppSection? = .home
 
     init(inMemory: Bool = false) throws {
+        self.inMemory = inMemory
         container = try PersistenceController.makeContainer(inMemory: inMemory)
         vocabulary = VocabularyStore(context: container.mainContext)
         history = HistoryStore(context: container.mainContext, vocabulary: vocabulary)
@@ -41,6 +47,21 @@ enum AppSection: String, CaseIterable, Identifiable {
         keychain = KeychainService()
         analysisService = LanguageAnalysisService(settings: settings, keychain: keychain)
         manualAnalysis = ManualAnalysisModel(service: analysisService, history: history, settings: settings)
+        speech = SpeechService()
+        commandPaletteModel = CommandPaletteModel(service: analysisService, vocabulary: vocabulary, history: history,
+                                                  queryHistory: CommandPaletteHistoryStore(context: container.mainContext),
+                                                  settings: settings, speech: speech)
+    }
+
+    func startSystemIntegration() {
+        if !inMemory { commandPalette.start() }
+    }
+
+    func clearHistory() throws {
+        try history.clear()
+        manualAnalysis.cancel()
+        commandPaletteModel.clear()
+        analysisService.clearCache()
     }
 }
 

@@ -23,7 +23,26 @@ struct FrenchAnalysis: Codable, Equatable, Sendable {
               grammar.count <= 4, chunks.count <= 4, examples.count <= 2 else {
             throw AppError.invalidResponse
         }
-        return self
+        var result = self
+        result.ipa = Self.present(ipa)
+        result.lemma = Self.present(lemma)
+        result.partOfSpeech = Self.present(partOfSpeech)
+        result.gender = Self.present(gender)
+        result.article = Self.present(article)
+        result.plural = Self.present(plural)
+        result.difficulty = Self.present(difficulty)
+        result.naturalnessNotes = Self.present(naturalnessNotes)
+        if let form = verbForm, Self.present(form.infinitive) == nil || Self.present(form.tense) == nil || Self.present(form.person) == nil {
+            result.verbForm = nil
+        }
+        return result
+    }
+
+    /// Some providers emit a literal "null" string despite nullable schema fields.
+    private static func present(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty, value.lowercased() != "null", value.lowercased() != "nil" else { return nil }
+        return value
     }
 }
 

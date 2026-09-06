@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var app
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         @Bindable var app = app
@@ -29,5 +30,12 @@ struct RootView: View {
         }
         .frame(minWidth: 820, minHeight: 600)
         .tint(.accentColor)
+        .onAppear {
+            app.openSettingsWindow = {
+                openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            app.startSystemIntegration()
+        }
     }
 }

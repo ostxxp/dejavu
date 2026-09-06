@@ -39,6 +39,25 @@ import XCTest
         XCTAssertEqual(body["input"] as? String, "bonjour")
     }
 
+    func testFollowUpSendsOnlyExplicitBoundedContextWithoutConversationID() async throws {
+        let analysis = PersistenceTests.analysis()
+        let encoded = String(decoding: try JSONEncoder().encode(analysis), as: UTF8.self)
+        let transport = StubTransport(data: try envelope(output: [["type": "message", "content": [["type": "output_text", "text": encoded]]]]))
+        let followUp = AnalysisRequest(query: "почему мягче?", context: FollowUpContext(originalQuery: "tu devrais", analysis: analysis))
+        _ = try await makeProvider(transport).analyze(followUp)
+        let captured = await transport.lastRequest
+        let request = try XCTUnwrap(captured)
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
+        XCTAssertEqual(body["store"] as? Bool, false)
+        XCTAssertNil(body["previous_response_id"])
+        XCTAssertNil(body["conversation"])
+        let turns = try XCTUnwrap(body["input"] as? [[String: String]])
+        XCTAssertEqual(turns.map { $0["role"] }, ["user", "assistant", "user"])
+        XCTAssertEqual(turns[0]["content"], "tu devrais")
+        XCTAssertEqual(turns[2]["content"], "почему мягче?")
+        XCTAssertEqual(try JSONDecoder().decode(FrenchAnalysis.self, from: Data(XCTUnwrap(turns[1]["content"]).utf8)), analysis)
+    }
+
     func testRefusalIncompleteAndMalformedResponses() async throws {
         let cases: [(Data, AppError)] = [
             (try envelope(output: [["type": "message", "content": [["type": "refusal", "refusal": "private server text"]]]]), .refused),

@@ -69,6 +69,7 @@ private struct MenuBarContent: View {
     @Environment(\.openWindow) private var openWindow
     var body: some View {
         Button("Открыть DéjàVu") { show(.home) }
+        Button("Быстрый помощник") { bootstrap.environment?.commandPalette.show() }
         Button("Сохранённое") { show(.saved) }
         Button("История") { show(.history) }
         Divider()

@@ -36,6 +36,7 @@ struct SettingsView: View {
                     Button("Сохранить ключ") {
                         perform {
                             try app.keychain.save(newKey)
+                            app.analysisService.clearCache()
                             newKey = ""
                             keyIsStored = true
                             notice = "Ключ сохранён в Связке ключей"
@@ -44,6 +45,7 @@ struct SettingsView: View {
                     Button("Удалить ключ", role: .destructive) {
                         perform {
                             try app.keychain.delete()
+                            app.analysisService.clearCache()
                             newKey = ""
                             keyIsStored = false
                             notice = "Ключ удалён"
@@ -61,6 +63,19 @@ struct SettingsView: View {
                 Text("Проверка отправит слово «bonjour» в сохранённую модель. Это небольшой платный запрос; в историю он не попадёт.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Section("Быстрый помощник") {
+                LabeledContent("Горячая клавиша", value: "⌘⇧F")
+                Button("Открыть помощник") { app.commandPalette.show() }
+                Text("Enter — отправить · Esc — закрыть · ⌘S — сохранить · ⌘L — прослушать · ⌘K — очистить · ↑↓ — история запросов.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if let error = app.commandPalette.shortcut.registrationError {
+                    Text(error).foregroundStyle(.red)
+                    Button("Повторить регистрацию клавиши") { app.commandPalette.retryShortcut() }
+                }
+                Text("До 100 недавних ответов хранятся в памяти 30 минут. «Обновить ответ» отправляет новый запрос. При выходе кэш очищается.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Очистить кэш ответов") { app.analysisService.clearCache(); notice = "Кэш очищен" }
+            }
             Section("Конфиденциальность") {
                 Toggle("Сохранять историю успешных разборов", isOn: $saveHistory)
                     .onChange(of: saveHistory) { _, value in
@@ -71,13 +86,14 @@ struct SettingsView: View {
                         saveHistory = app.settings.saveHistory
                     }
                 Text("История и сохранённые выражения хранятся только на этом Mac. Если история выключена, разбор останется только на экране, пока вы сами его не сохраните.")
+                Text("История включает до 100 успешных вопросов помощника и контекст уточнений. Она управляется тем же переключателем. Кэш ответов остаётся только в памяти; его можно очистить отдельно.")
                 Text("Текст отправляется в OpenAI только по вашему запросу. Сохранение ответа на стороне API отключено; обработка данных поставщиком регулируется его политикой.")
                 Text("Буфер обмена не отслеживается. Доступ к микрофону, выделенному тексту и страницам браузера не запрашивается.")
                 Button("Очистить историю…", role: .destructive) { clearConfirmation = true }
             }
             Section("О приложении") {
                 LabeledContent("Приложение", value: "DéjàVu")
-                LabeledContent("Версия", value: "0.1.0")
+                LabeledContent("Версия", value: "0.2.0")
                 Text("Французский для жизни. Для русскоязычного ученика A2 → B1.")
                     .foregroundStyle(.secondary)
             }
@@ -105,7 +121,7 @@ struct SettingsView: View {
         .onChange(of: app.settings.provider) { _, value in provider = value }
         .confirmationDialog("Очистить историю разборов?", isPresented: $clearConfirmation) {
             Button("Очистить историю", role: .destructive) {
-                perform { try app.history.clear(); notice = "История очищена" }
+                perform { try app.clearHistory(); notice = "История очищена" }
             }
             Button("Отмена", role: .cancel) {}
         } message: {

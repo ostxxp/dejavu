@@ -21,6 +21,10 @@ struct HomeView: View {
                     Label("Сохранено: \(saved.count)", systemImage: "bookmark")
                 }.font(.callout).foregroundStyle(.secondary)
 
+                Button("Открыть быстрый помощник · ⌘⇧F", systemImage: "text.magnifyingglass") {
+                    app.commandPalette.show()
+                }
+
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Ручной разбор").font(.title3.weight(.semibold))
                     Text("Выражение или вопрос о французском").font(.callout).foregroundStyle(.secondary)

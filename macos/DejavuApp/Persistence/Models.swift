@@ -20,7 +20,7 @@ import SwiftData
     var analysisData: Data
 
     var source: AnalysisSource { AnalysisSource(rawValue: sourceRaw) ?? .manual }
-    var analysis: FrenchAnalysis? { try? JSONDecoder().decode(FrenchAnalysis.self, from: analysisData) }
+    var analysis: FrenchAnalysis? { try? JSONDecoder().decode(FrenchAnalysis.self, from: analysisData).validated() }
 
     init(analysis: FrenchAnalysis, source: AnalysisSource, data: Data, now: Date) {
         id = UUID()
@@ -51,7 +51,7 @@ import SwiftData
     var analysisData: Data
 
     var source: AnalysisSource { AnalysisSource(rawValue: sourceRaw) ?? .manual }
-    var analysis: FrenchAnalysis? { try? JSONDecoder().decode(FrenchAnalysis.self, from: analysisData) }
+    var analysis: FrenchAnalysis? { try? JSONDecoder().decode(FrenchAnalysis.self, from: analysisData).validated() }
 
     init(analysis: FrenchAnalysis, source: AnalysisSource, data: Data, now: Date) {
         id = UUID()
@@ -80,5 +80,23 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
         providerRaw = AIProvider.openAI.rawValue
         model = "gpt-4o-mini"
         saveHistory = true
+    }
+}
+
+@Model final class CommandPaletteHistoryEntry {
+    @Attribute(.unique) var id: UUID
+    @Attribute(.unique) var fingerprint: String
+    var query: String
+    var requestData: Data
+    var lastUsedAt: Date
+
+    var request: AnalysisRequest? { try? JSONDecoder().decode(AnalysisRequest.self, from: requestData) }
+
+    init(request: AnalysisRequest, fingerprint: String, data: Data, now: Date) {
+        id = UUID()
+        self.fingerprint = fingerprint
+        query = request.query
+        requestData = data
+        lastUsedAt = now
     }
 }

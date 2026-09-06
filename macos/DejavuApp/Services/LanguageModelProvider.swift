@@ -1,8 +1,14 @@
 import Foundation
 
 protocol LanguageModelProvider: Sendable {
-    func analyze(_ input: String) async throws -> FrenchAnalysis
+    func analyze(_ request: AnalysisRequest) async throws -> FrenchAnalysis
     func testConnection() async throws
+}
+
+extension LanguageModelProvider {
+    func analyze(_ input: String) async throws -> FrenchAnalysis {
+        try await analyze(AnalysisRequest(query: input))
+    }
 }
 
 protocol HTTPTransport: Sendable {

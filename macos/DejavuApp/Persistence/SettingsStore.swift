@@ -5,6 +5,7 @@ import SwiftData
 @MainActor @Observable final class SettingsStore {
     private let context: ModelContext
     private let record: AppSettings
+    private(set) var historyRevision = 0
     var provider: AIProvider { AIProvider(rawValue: record.providerRaw) ?? .openAI }
     var model: String { record.model }
     var saveHistory: Bool { record.saveHistory }
@@ -30,6 +31,7 @@ import SwiftData
         }
         record.providerRaw = provider.rawValue
         record.model = model
+        if record.saveHistory != saveHistory { historyRevision += 1 }
         record.saveHistory = saveHistory
         try PersistenceController.save(context)
     }

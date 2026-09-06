@@ -32,6 +32,7 @@ import Observation
         requestID = id
         // Turning history off while a request is running must also prevent its storage.
         let historyWasEnabled = settings.saveHistory
+        let historyRevision = settings.historyRevision
         task = Task { [weak self] in
             guard let self else { return }
             defer { if self.requestID == id { self.isLoading = false; self.task = nil } }
@@ -40,7 +41,7 @@ import Observation
                 try Task.checkCancellation()
                 guard self.requestID == id else { return }
                 self.result = analysis
-                if historyWasEnabled && self.settings.saveHistory {
+                if historyWasEnabled && self.settings.saveHistory && historyRevision == self.settings.historyRevision {
                     try self.history.record(analysis, source: .manual)
                 }
             } catch is CancellationError {

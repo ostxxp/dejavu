@@ -3,7 +3,8 @@ import SwiftData
 
 @MainActor enum PersistenceController {
     static func makeContainer(inMemory: Bool = false, url: URL? = nil) throws -> ModelContainer {
-        let schema = Schema([VocabularyEntry.self, AnalysisHistoryEntry.self, AppSettings.self])
+        let schema = Schema([VocabularyEntry.self, AnalysisHistoryEntry.self, AppSettings.self,
+                             CommandPaletteHistoryEntry.self])
         let configuration: ModelConfiguration
         if let url {
             configuration = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)
