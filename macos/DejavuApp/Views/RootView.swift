@@ -30,6 +30,7 @@ struct RootView: View {
         }
         .frame(minWidth: 820, minHeight: 600)
         .tint(.accentColor)
+        .sheet(isPresented: $app.showWelcome) { WelcomeView().environment(app).interactiveDismissDisabled() }
         .onOpenURL { url in
             guard url.scheme == "dejavu", url.host == "open", url.query == nil else { return }
             openWindow(id: "main")

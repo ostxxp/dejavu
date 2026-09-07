@@ -5,7 +5,8 @@ struct DialogueScenario: Codable, Equatable, Sendable {
     let question: String
     func validated() throws -> Self {
         guard !situation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, situation.count <= 400,
-              !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, question.count <= 400 else { throw AppError.invalidResponse }
+              !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, question.count <= 400,
+              question.range(of: "\\p{Cyrillic}", options: .regularExpression) == nil else { throw AppError.invalidResponse }
         return self
     }
 }
@@ -22,6 +23,8 @@ struct DialogueFeedback: Codable, Equatable, Sendable {
 
     func validated() throws -> Self {
         guard !usefulPhrase.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, usefulPhrase.count <= 400,
+              usefulPhrase.range(of: "\\p{Cyrillic}", options: .regularExpression) == nil,
+              [correctedVersion, moreNaturalVersion].compactMap({ $0 }).allSatisfy({ $0.range(of: "\\p{Cyrillic}", options: .regularExpression) == nil }),
               !usefulTranslation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, usefulTranslation.count <= 600,
               !encouragement.isEmpty, encouragement.count <= 600,
               [correctedVersion, moreNaturalVersion, mainIssue].compactMap({ $0 }).allSatisfy({ $0.count <= 1500 }) else { throw AppError.invalidResponse }
@@ -82,7 +85,12 @@ struct DialogueFeedback: Codable, Equatable, Sendable {
         Иначе correctedVersion — минимальная корректировка по-французски при наличии ошибки или null;
         moreNaturalVersion — один естественный вариант по-французски, сохранив смысл, или null.
         mainIssue — одно-два коротких пояснения по-русски: сначала смысл, затем грамматика и естественность.
-        usefulPhrase — одна полезная французская фраза, usefulTranslation — её русский перевод.
+        usefulPhrase — ТОЛЬКО одна французская фраза: без русского, перевода, тире с пояснением или markdown.
+        usefulTranslation — точный русский перевод именно usefulPhrase, НЕ исходного вопроса.
+        correctedVersion и moreNaturalVersion тоже содержат только французский текст без пояснений.
+        Например: usefulPhrase="Je ne suis pas disponible ce soir.", usefulTranslation="Сегодня вечером я занят."
+        Используй обычные живые формулировки. Не добавляй искусственную похвалу вроде «Ты хорошо стремишься».
+        encouragement — например «Мысль понятна.»; не повторяй уже показанный статус естественности.
         encouragement — короткая поддержка по-русски без баллов, процентов, оценок и выдуманных достижений.
         Не выдавай медицинские или юридические рекомендации: это только языковая практика.
         """, name: "dialogue_feedback", schema: Self.schema(strings: ["usefulPhrase", "usefulTranslation", "encouragement"],

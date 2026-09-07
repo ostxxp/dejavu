@@ -85,3 +85,11 @@ DialogueService uses the same OpenAI Responses transport and keychain as analysi
 DialogueController polls eligibility every 15 seconds, with an interval plus up to 20% jitter. It checks session state, idle duration, wake cooldown, full-screen bounds, mirrored screens, known meeting/presentation applications and existing helpers. No pixel capture, screen-recording permission or accessibility permission is requested. These interruption checks are heuristics, not a reliable screen-sharing/Focus detector. A nonactivating NSPanel uses visible screen bounds; an explicit trial can take focus. Pauses and schedule preferences have migration defaults in AppSettings.
 
 DialogueVoice requests Speech and microphone permissions only after explicit action, requires local fr-FR support, limits recording to 60 seconds and presents editable text before AI submission. Generation IDs prevent a delayed permission/recognition callback from restarting or filling a closed interaction. Unsupported on-device recognition falls back to typing, never silently uploads audio. See PHASE_6.md for verification limits and API references.
+
+## Product polish and permissions
+
+Welcome completion is a SwiftData setting: new records start incomplete, while migration defaults existing installs to complete. The welcome sheet never enables optional integrations or requests permissions. It can be reopened from Home. Native views use semantic colors; extension light/dark CSS follows prefers-color-scheme and short fades respect prefers-reduced-motion.
+
+Speech permission bridging is explicitly nonisolated with Sendable callbacks. Audio render callbacks are also Sendable; only explicit MainActor tasks update UI. This fixes a Swift 6 isolation trap reproduced with the system permission callback and covered by a background-queue test. Provider changes, key changes and cache clearing cancel active AI work and discard visible temporary results; the manual draft remains editable.
+
+Extension analysis validation checks nested learning points/examples before rendering. Unexpected browser errors use a conservative Russian message rather than exposing raw exception text. French dialogue fields reject embedded Cyrillic translations; the prompt separates the useful phrase from its translation. This is a structural guard, not a guarantee of semantic correctness.

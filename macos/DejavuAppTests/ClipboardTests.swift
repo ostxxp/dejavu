@@ -213,6 +213,7 @@ import XCTest
         XCTAssertFalse(settings.clipboardAutomatic)
         XCTAssertTrue(settings.clipboardShowPanel)
         XCTAssertTrue(settings.clipboardHistory)
+        XCTAssertTrue(settings.welcomeCompleted) // Existing installations are not interrupted by first-run UI.
     }
 
     private func settle(_ predicate: () -> Bool) async {

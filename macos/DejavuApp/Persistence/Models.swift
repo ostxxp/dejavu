@@ -76,6 +76,7 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
     var saveHistory: Bool
     var bridgeEnabled: Bool = false
     var bridgeExtensionID: String = ""
+    var welcomeCompleted: Bool = true
     var dialogueEnabled: Bool = false
     var dialogueMinutes: Int = 45
     var dialoguePausedUntil: Date?
@@ -87,6 +88,7 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
 
     init() {
         identifier = "default"
+        welcomeCompleted = false
         providerRaw = AIProvider.openAI.rawValue
         model = "gpt-4o-mini"
         saveHistory = true

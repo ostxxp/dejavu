@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct SavedView: View {
+    @Environment(AppEnvironment.self) private var app
     @Query(filter: #Predicate<VocabularyEntry> { $0.savedByUser }, sort: \VocabularyEntry.lastSeenAt, order: .reverse)
     private var entries: [VocabularyEntry]
     @State private var search = ""
@@ -15,8 +16,13 @@ struct SavedView: View {
     var body: some View {
         Group {
             if entries.isEmpty {
-                ContentUnavailableView("Здесь будет ваш французский", systemImage: "bookmark",
-                                       description: Text("Сохраните полезное выражение после разбора — оно останется на этом Mac."))
+                ContentUnavailableView {
+                    Label("Здесь будет ваш французский", systemImage: "bookmark")
+                } description: {
+                    Text("Сохраните полезное выражение после разбора — оно останется на этом Mac.")
+                } actions: {
+                    Button("Разобрать выражение") { app.section = .home }
+                }
             } else if filtered.isEmpty {
                 ContentUnavailableView("Ничего не найдено", systemImage: "magnifyingglass",
                                        description: Text("Попробуйте другое слово или перевод."))
@@ -38,6 +44,7 @@ struct SavedView: View {
 }
 
 struct HistoryView: View {
+    @Environment(AppEnvironment.self) private var app
     @Query(sort: \AnalysisHistoryEntry.createdAt, order: .reverse) private var entries: [AnalysisHistoryEntry]
     @State private var search = ""
     @State private var selected: AnalysisHistoryEntry?
@@ -50,7 +57,7 @@ struct HistoryView: View {
         Group {
             if entries.isEmpty {
                 ContentUnavailableView("Пока без истории", systemImage: "clock.arrow.circlepath",
-                                       description: Text("Здесь появятся успешные разборы, если сохранение истории включено в настройках."))
+                                       description: Text(app.settings.saveHistory ? "Здесь появятся успешные разборы. Начните с выражения на главной." : "Сохранение истории выключено. Его можно включить в настройках; сохранённые выражения остаются в словаре."))
             } else if filtered.isEmpty {
                 ContentUnavailableView("Ничего не найдено", systemImage: "magnifyingglass",
                                        description: Text("Попробуйте другое слово или перевод."))

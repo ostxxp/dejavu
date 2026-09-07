@@ -52,6 +52,12 @@ import Observation
         }
     }
 
+    func clearResult() {
+        cancel()
+        result = nil
+        errorMessage = nil
+    }
+
     func cancel() {
         requestID = UUID()
         task?.cancel()

@@ -21,6 +21,8 @@ struct HomeView: View {
                     Label("Сохранено: \(saved.count)", systemImage: "bookmark")
                 }.font(.callout).foregroundStyle(.secondary)
 
+                Button("Как пользоваться DéjàVu", systemImage: "questionmark.circle") { app.showWelcome = true }
+
                 Button("Открыть быстрый помощник · ⌘⇧F", systemImage: "text.magnifyingglass") {
                     app.commandPalette.show()
                 }

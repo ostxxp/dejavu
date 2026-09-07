@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct DialogueView: View {
     @Environment(AppEnvironment.self) private var app
@@ -12,7 +13,7 @@ struct DialogueView: View {
                     Text("Минутка французского").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button { dialogue.close() } label: { Image(systemName: "xmark") }.help("Закрыть мини-диалог")
+                Button { dialogue.close() } label: { Image(systemName: "xmark") }.help("Закрыть мини-диалог").accessibilityLabel("Закрыть мини-диалог")
             }.padding(20)
             Divider()
             ScrollView {
@@ -119,8 +120,13 @@ struct DialogueSettingsView: View {
                 Button("Отложить на час") { app.dialogueController.pause(until: .now.addingTimeInterval(3600)) }
                 Button("Приостановить до завтра") { app.dialogueController.pause(until: DialogueTiming.tomorrow(now: .now)) }
             }
-            Button("Попробовать мини-диалог сейчас") { app.dialogueController.triggerNow() }
-            Text("Пробный запуск отправляет один запрос в ИИ даже при выключенном расписании.").font(.caption).foregroundStyle(.secondary)
+            Text("Разрешения находятся в разделе macOS «Конфиденциальность и безопасность»: «Микрофон» и «Распознавание речи».").font(.caption).foregroundStyle(.secondary)
+            Text(app.dialogueVoice.permissionDescription).font(.caption).foregroundStyle(.secondary)
+            Button("Открыть настройки macOS") {
+                NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+            }
+            Button("Начать мини-диалог") { app.dialogueController.triggerNow() }
+            Text("Ручной запуск отправляет один запрос в ИИ даже при выключенном расписании.").font(.caption).foregroundStyle(.secondary)
             if let message = app.dialogueSettingsError { Text(message).foregroundStyle(.red) }
         }.onAppear { minutes = app.settings.dialogueMinutes; preset = [20,30,45,60].contains(minutes) ? minutes : 0 }
     }

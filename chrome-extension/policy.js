@@ -26,7 +26,19 @@ export function likelyFrench(text, detection) {
   return known.test(text) || detection?.languages?.some(l => l.language === "fr" && l.percentage >= 60) === true;
 }
 export function isAnalysis(value) {
-  return value && typeof value.original === "string" && value.original.length <= 8000 &&
-    typeof value.translation === "string" && ["grammar", "chunks", "examples"].every(k => Array.isArray(value[k])) &&
-    value.grammar.length <= 4 && value.chunks.length <= 4 && value.examples.length <= 2;
+  const object = v => v !== null && typeof v === "object" && !Array.isArray(v);
+  const text = (v, limit = 8000) => typeof v === "string" && v.length <= limit;
+  if (!object(value) || !text(value.original) || !value.original.trim() ||
+      !text(value.translation) || !value.translation.trim()) return false;
+  for (const key of ["grammar", "chunks"]) {
+    if (!Array.isArray(value[key]) || value[key].length > 4 ||
+        !value[key].every(p => object(p) && text(p.title) && text(p.explanation))) return false;
+  }
+  if (!Array.isArray(value.examples) || value.examples.length > 2 ||
+      !value.examples.every(p => object(p) && text(p.fr) && text(p.translation))) return false;
+  for (const key of ["ipa", "lemma", "partOfSpeech", "gender", "article", "plural", "difficulty", "naturalnessNotes"]) {
+    if (value[key] != null && !text(value[key])) return false;
+  }
+  return value.verbForm == null || (object(value.verbForm) &&
+    ["infinitive", "tense", "person"].every(k => text(value.verbForm[k])));
 }

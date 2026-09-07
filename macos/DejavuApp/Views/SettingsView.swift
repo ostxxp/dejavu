@@ -36,7 +36,7 @@ struct SettingsView: View {
                     Button("Сохранить ключ") {
                         perform {
                             try app.keychain.save(newKey)
-                            app.analysisService.clearCache()
+                            app.resetAIWork()
                             newKey = ""
                             keyIsStored = true
                             notice = "Ключ сохранён в Связке ключей"
@@ -45,7 +45,7 @@ struct SettingsView: View {
                     Button("Удалить ключ", role: .destructive) {
                         perform {
                             try app.keychain.delete()
-                            app.analysisService.clearCache()
+                            app.resetAIWork()
                             newKey = ""
                             keyIsStored = false
                             notice = "Ключ удалён"
@@ -74,7 +74,7 @@ struct SettingsView: View {
                 }
                 Text("До 100 недавних ответов хранятся в памяти 30 минут. «Обновить ответ» отправляет новый запрос. При выходе кэш очищается.")
                     .font(.caption).foregroundStyle(.secondary)
-                Button("Очистить кэш ответов") { app.analysisService.clearCache(); notice = "Кэш очищен" }
+                Button("Очистить кэш ответов") { app.resetAIWork(); notice = "Кэш очищен" }
             }
             Section("Разбор скопированного") {
                 if let error = app.clipboardSettingsError { Text(error).foregroundStyle(.red) }
@@ -114,7 +114,7 @@ struct SettingsView: View {
             }
             Section("О приложении") {
                 LabeledContent("Приложение", value: "DéjàVu")
-                LabeledContent("Версия", value: "0.6.0")
+                LabeledContent("Версия", value: "0.7.0")
                 Text("Французский для жизни. Для русскоязычного ученика A2 → B1.")
                     .foregroundStyle(.secondary)
             }
@@ -152,7 +152,9 @@ struct SettingsView: View {
 
     private func saveSettings() {
         perform {
+            let changed = provider != app.settings.provider || model != app.settings.model
             try app.settings.update(provider: provider, model: model, saveHistory: app.settings.saveHistory)
+            if changed { app.resetAIWork() }
             model = app.settings.model
             notice = "Настройки сохранены"
         }

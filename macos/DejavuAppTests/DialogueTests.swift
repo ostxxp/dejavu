@@ -1,4 +1,5 @@
 import SwiftData
+import Speech
 import XCTest
 @testable import DejavuApp
 
@@ -112,6 +113,28 @@ import XCTest
         let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(captured?.httpBody)) as? [String: Any])
         let input = try XCTUnwrap(body["input"] as? String)
         XCTAssertTrue(input.contains("Je reste ici.")); XCTAssertFalse(input.contains("optionalVocabulary"))
+    }
+    func testSpeechPermissionReplyCanArriveOnBackgroundQueue() async {
+        let status = await DialogueVoice.requestSpeechAuthorization { reply in
+            DispatchQueue.global().async { reply(.authorized) }
+        }
+        XCTAssertEqual(status, .authorized)
+    }
+    func testFrenchPhraseCannotContainEmbeddedRussianTranslation() throws {
+        let bad = DialogueFeedback(understood: true, isNatural: true, correctedVersion: nil, moreNaturalVersion: nil,
+            mainIssue: nil, usefulPhrase: "Je viens. — Я приду.", usefulTranslation: "Я приду.", encouragement: "Понятно.")
+        XCTAssertThrowsError(try bad.validated())
+        XCTAssertNoThrow(try Self.feedback.validated())
+    }
+    func testWelcomeCompletionDoesNotEnableOptionalFeatures() throws {
+        let h = try Harness()
+        XCTAssertFalse(h.settings.welcomeCompleted)
+        try h.settings.completeWelcome()
+        let reload = try SettingsStore(context: h.container.mainContext)
+        XCTAssertTrue(reload.welcomeCompleted)
+        XCTAssertFalse(reload.dialogueEnabled)
+        XCTAssertFalse(reload.clipboardEnabled)
+        XCTAssertFalse(reload.bridgeEnabled)
     }
     func testVoiceStartsInactiveAndClearDoesNotRequestPermissions() {
         let voice = DialogueVoice()

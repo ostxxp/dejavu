@@ -7,6 +7,7 @@ import SwiftData
     private let record: AppSettings
     private(set) var historyRevision = 0
     private(set) var clipboardRevision = 0
+    var welcomeCompleted: Bool { record.welcomeCompleted }
     var dialogueEnabled: Bool { record.dialogueEnabled }
     var dialogueMinutes: Int { record.dialogueMinutes }
     var dialoguePausedUntil: Date? { record.dialoguePausedUntil }
@@ -32,6 +33,11 @@ import SwiftData
             context.insert(record)
             try PersistenceController.save(context)
         }
+    }
+
+    func completeWelcome() throws {
+        record.welcomeCompleted = true
+        try PersistenceController.save(context)
     }
 
     func updateDialogue(enabled: Bool, minutes: Int, reuseVocabulary: Bool) throws {

@@ -46,6 +46,7 @@ enum AppSection: String, CaseIterable, Identifiable {
     @ObservationIgnored lazy var commandPalette = CommandPaletteController(app: self)
     @ObservationIgnored var openSettingsWindow: (() -> Void)?
     var clipboardSettingsError: String?
+    var showWelcome = false
     var section: AppSection? = .home
 
     init(inMemory: Bool = false) throws {
@@ -97,10 +98,20 @@ enum AppSection: String, CaseIterable, Identifiable {
     func startSystemIntegration() {
         guard !inMemory, !integrationStarted else { return }
         integrationStarted = true
+        showWelcome = !settings.welcomeCompleted
         browserBridge.startIfEnabled()
         commandPalette.start()
         configureClipboard()
         dialogueController.start()
+    }
+
+    func resetAIWork() {
+        manualAnalysis.clearResult()
+        commandPaletteModel.clear()
+        clipboardModel.clear()
+        dialogue.clearMemory()
+        browserBridge.clearResults()
+        analysisService.clearCache()
     }
 
     func clearHistory() throws {
@@ -108,7 +119,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         dialogue.clearMemory()
         browserBridge.clearResults()
         clipboardModel.clear()
-        manualAnalysis.cancel()
+        manualAnalysis.clearResult()
         commandPaletteModel.clear()
         analysisService.clearCache()
     }

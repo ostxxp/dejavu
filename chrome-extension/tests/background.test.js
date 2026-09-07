@@ -74,3 +74,9 @@ test('Concurrent analyses keep ownership records for both documents',async()=>{
  assert.equal(h.session.issued[results[0].id].tab,1);
  assert.equal(h.session.issued[results[1].id].tab,2);
 });
+
+test('Unexpected browser errors are not exposed as raw technical text',async()=>{
+ const h=await harness();chrome.i18n.detectLanguage=async()=>{throw new Error('example internal details')};
+ const result=await h.send({type:'CANDIDATE',text:'bonjour'});
+ assert.equal(result.ok,false);assert.ok(!result.error.includes('internal details'));
+});

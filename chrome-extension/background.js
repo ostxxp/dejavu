@@ -13,6 +13,8 @@ function withIssuedLock(operation) {
   return work;
 }
 const popupURL = chrome.runtime.getURL("popup.html");
+class UserFacingError extends Error {}
+const publicError = e => e instanceof UserFacingError ? e.message : "Не удалось выполнить действие. Повторите попытку.";
 const error = message => ({ok: false, error: message});
 async function settings() {
   await ready;
@@ -20,7 +22,7 @@ async function settings() {
   return {...DEFAULTS, ...value};
 }
 async function bridge(path, body, pairingCode, signal) {
-  if (!/^[a-f0-9]{64}$/.test(pairingCode || "")) throw new Error("Подключите расширение к DéjàVu на Mac.");
+  if (!/^[a-f0-9]{64}$/.test(pairingCode || "")) throw new UserFacingError("Подключите расширение к DéjàVu на Mac.");
   let response;
   try {
     response = await fetch(BASE + path, {
@@ -29,17 +31,17 @@ async function bridge(path, body, pairingCode, signal) {
       credentials: "omit", cache: "no-store", redirect: "error", signal: signal ?? AbortSignal.timeout(25000)
     });
   } catch (e) {
-    if (e.name === "AbortError") throw new Error("Запрос отменён.");
-    throw new Error("Нет ответа от Mac. Откройте DéjàVu и включите подключение в настройках.");
+    if (e.name === "AbortError") throw new UserFacingError("Запрос отменён.");
+    throw new UserFacingError("Нет ответа от Mac. Откройте DéjàVu и включите подключение в настройках.");
   }
-  if (response.status === 401) throw new Error("Код подключения не принят. Подключите расширение заново.");
-  if (response.status === 403) throw new Error("Укажите ID этого расширения в настройках DéjàVu на Mac.");
-  if (response.status === 429) throw new Error("Слишком много запросов. Попробуйте чуть позже.");
-  if (response.status === 404) throw new Error("Разбор устарел. Выделите текст и разберите его заново.");
-  if (!response.ok) throw new Error("Не удалось выполнить действие. Проверьте подключение ИИ в DéjàVu и повторите.");
+  if (response.status === 401) throw new UserFacingError("Код подключения не принят. Подключите расширение заново.");
+  if (response.status === 403) throw new UserFacingError("Укажите ID этого расширения в настройках DéjàVu на Mac.");
+  if (response.status === 429) throw new UserFacingError("Слишком много запросов. Попробуйте чуть позже.");
+  if (response.status === 404) throw new UserFacingError("Разбор устарел. Выделите текст и разберите его заново.");
+  if (!response.ok) throw new UserFacingError("Не удалось выполнить действие. Проверьте подключение ИИ в DéjàVu и повторите.");
   const text = await response.text();
-  if (text.length > 1_000_000) throw new Error("Получен слишком большой ответ.");
-  try { return JSON.parse(text); } catch { throw new Error("Не удалось прочитать ответ от Mac."); }
+  if (text.length > 1_000_000) throw new UserFacingError("Получен слишком большой ответ.");
+  try { return JSON.parse(text); } catch { throw new UserFacingError("Не удалось прочитать ответ от Mac."); }
 }
 function keyFor(sender, id) { return `${sender.tab.id}:${sender.documentId ?? sender.url}:${id}`; }
 async function issuedRecords() {
@@ -60,7 +62,7 @@ async function dispatch(message, sender) {
       case "STATUS": {
         let connected = false;
         let detail = config.pairingCode ? "Приложение не отвечает" : "Подключите к Mac";
-        try { const health = await bridge("/v1/health", null, config.pairingCode); connected = health.status === "ok"; detail = connected ? "Приложение подключено ✓" : detail; } catch (e) { detail = e.message; }
+        try { const health = await bridge("/v1/health", null, config.pairingCode); connected = health.status === "ok"; detail = connected ? "Приложение подключено ✓" : detail; } catch (e) { detail = publicError(e); }
         return {ok: true, connected, detail, enabled: config.enabled, blockedDomains: config.blockedDomains, extensionID: chrome.runtime.id};
       }
       case "PAIR": {
@@ -118,11 +120,11 @@ async function dispatch(message, sender) {
     try {
       const result = await bridge("/v1/analyze", {text}, config.pairingCode, controller.signal);
       const latest = await settings();
-      if (controller.signal.aborted || latest.pairingCode !== config.pairingCode || !allowedPage(sender.url, latest)) throw new Error("Запрос отменён.");
-      if (!isAnalysis(result.analysis) || typeof result.id !== "string") throw new Error("Не удалось прочитать разбор.");
+      if (controller.signal.aborted || latest.pairingCode !== config.pairingCode || !allowedPage(sender.url, latest)) throw new UserFacingError("Запрос отменён.");
+      if (!isAnalysis(result.analysis) || typeof result.id !== "string") throw new UserFacingError("Не удалось прочитать разбор.");
       await withIssuedLock(async () => {
       const current = await settings();
-      if (controller.signal.aborted || current.pairingCode !== config.pairingCode || !allowedPage(sender.url, current)) throw new Error("Запрос отменён.");
+      if (controller.signal.aborted || current.pairingCode !== config.pairingCode || !allowedPage(sender.url, current)) throw new UserFacingError("Запрос отменён.");
       const issued = await issuedRecords();
       issued[result.id] = {tab: sender.tab.id, document: sender.documentId ?? sender.url, original: result.analysis.original, at: Date.now()};
       const records = Object.entries(issued).sort((a,b) => b[1].at - a[1].at).slice(0,100);
@@ -147,7 +149,7 @@ async function dispatch(message, sender) {
   return error("Неизвестное действие.");
 }
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
-  dispatch(message, sender).then(respond).catch(e => respond(error(e instanceof Error ? e.message : "Не удалось выполнить действие.")));
+  dispatch(message, sender).then(respond).catch(e => respond(error(publicError(e))));
   return true;
 });
 chrome.tabs.onRemoved.addListener(tabId => {

@@ -33,3 +33,9 @@ test('Manifest isolates worker networking and does not expose resources or exter
  assert.ok(!content.includes('pairingCode'));
  assert.equal(isAnalysis({original:'bonjour',translation:'привет',grammar:[],chunks:[],examples:[]}),true);
 });
+
+test('Malformed nested analysis is rejected before rendering',()=>{
+ const good={original:'bonjour',translation:'привет',grammar:[],chunks:[],examples:[]};
+ for(const extra of [{grammar:[null]},{chunks:[{title:{},explanation:'x'}]},{examples:[{fr:'bonjour',translation:42}]},{verbForm:{infinitive:'être'}},{ipa:{}},{original:''}])assert.equal(isAnalysis({...good,...extra}),false);
+ assert.equal(isAnalysis({...good,grammar:[{title:'Приветствие',explanation:'Нейтральное.'}]}),true);
+});
