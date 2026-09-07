@@ -15,9 +15,10 @@ enum PalettePlacement {
 
 @MainActor final class CommandPaletteController: NSObject, NSWindowDelegate {
     let shortcut = GlobalShortcut()
+    private let motion = PanelMotion()
     private unowned let app: AppEnvironment
     private var panel: PalettePanel?
-    var isVisible: Bool { panel?.isVisible == true }
+    var isVisible: Bool { panel?.isVisible == true && !motion.isClosing }
     private var started = false
     private var hiding = false
 
@@ -34,7 +35,7 @@ enum PalettePlacement {
     }
 
     func toggle() {
-        if panel?.isVisible == true { hide() } else { show() }
+        if isVisible { hide() } else { show() }
     }
 
     func show() {
@@ -45,7 +46,7 @@ enum PalettePlacement {
             panel.setFrame(PalettePlacement.frame(in: screen.visibleFrame,
                                                   preferredHeight: app.commandPaletteModel.preferredHeight), display: false)
         }
-        panel.makeKeyAndOrderFront(nil)
+        motion.show(panel, takesFocus: true)
         app.commandPaletteModel.prepareToShow()
     }
 
@@ -53,7 +54,7 @@ enum PalettePlacement {
         guard !hiding else { return }
         hiding = true
         app.commandPaletteModel.cancel()
-        panel?.orderOut(nil)
+        motion.hide(panel)
         hiding = false
     }
 
@@ -96,7 +97,7 @@ enum PalettePlacement {
         panel.contentView = NSHostingView(rootView:
             CommandPaletteView(onClose: { [weak self] in self?.hide() },
                                onResize: { [weak self] in self?.resize() })
-                .environment(app)
+                .modifier(DejavuAppearance()).environment(app)
                 .modelContainer(app.container)
                 .environment(\.locale, Locale(identifier: "ru_RU")))
         self.panel = panel

@@ -7,6 +7,8 @@ import SwiftData
     private let record: AppSettings
     private(set) var historyRevision = 0
     private(set) var clipboardRevision = 0
+    var accent: AppAccent { AppAccent(rawValue: record.accentRaw) ?? .lavender }
+    var playfulDetails: Bool { record.playfulDetails }
     var welcomeCompleted: Bool { record.welcomeCompleted }
     var dialogueEnabled: Bool { record.dialogueEnabled }
     var dialogueMinutes: Int { record.dialogueMinutes }
@@ -33,6 +35,12 @@ import SwiftData
             context.insert(record)
             try PersistenceController.save(context)
         }
+    }
+
+    func updateAppearance(accent: AppAccent, playfulDetails: Bool) throws {
+        record.accentRaw = accent.rawValue
+        record.playfulDetails = playfulDetails
+        try PersistenceController.save(context)
     }
 
     func completeWelcome() throws {

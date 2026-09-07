@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -14,22 +15,33 @@ struct RootView: View {
             .navigationSplitViewColumnWidth(min: 180, ideal: 205, max: 250)
             .safeAreaInset(edge: .bottom) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("DéjàVu").font(.system(.title3, design: .serif, weight: .semibold))
+                    HStack(spacing: 8) {
+                        Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 28, height: 28).accessibilityHidden(true)
+                        Text("DéjàVu").font(.system(.title3, design: .serif, weight: .semibold))
+                    }
                     Text("Французский рядом").font(.caption).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(20)
             }
         } detail: {
-            switch app.section ?? .home {
-            case .home: HomeView()
-            case .saved: SavedView()
-            case .history: HistoryView()
-            case .settings: SettingsView()
+            ZStack {
+                Group {
+                    switch app.section ?? .home {
+                    case .home: HomeView()
+                    case .saved: SavedView()
+                    case .history: HistoryView()
+                    case .settings: SettingsView()
+                    }
+                }
+                .id(app.section ?? .home)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 6)))
             }
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: app.section)
+
         }
         .frame(minWidth: 820, minHeight: 600)
-        .tint(.accentColor)
+        .modifier(DejavuAppearance())
         .sheet(isPresented: $app.showWelcome) { WelcomeView().environment(app).interactiveDismissDisabled() }
         .onOpenURL { url in
             guard url.scheme == "dejavu", url.host == "open", url.query == nil else { return }

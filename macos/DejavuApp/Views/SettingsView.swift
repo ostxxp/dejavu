@@ -15,6 +15,17 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Оформление") {
+                Text("Акцентный цвет").font(.callout)
+                AccentSwatches(selected: app.settings.accent) { value in
+                    perform { try app.settings.updateAppearance(accent: value, playfulDetails: app.settings.playfulDetails) }
+                }
+                Toggle("Милые детали", isOn: Binding(
+                    get: { app.settings.playfulDetails },
+                    set: { value in perform { try app.settings.updateAppearance(accent: app.settings.accent, playfulDetails: value) } }))
+                Text("Лёгкие парящие детали на главной. Анимации учитывают «Уменьшение движения» в macOS. Цвет расширения можно выбрать в его меню.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Подключение ИИ") {
                 Picker("Поставщик", selection: $provider) {
                     ForEach(AIProvider.allCases) { Text($0.title).tag($0) }
@@ -114,7 +125,7 @@ struct SettingsView: View {
             }
             Section("О приложении") {
                 LabeledContent("Приложение", value: "DéjàVu")
-                LabeledContent("Версия", value: "0.7.0")
+                LabeledContent("Версия", value: "0.8.0")
                 Text("Французский для жизни. Для русскоязычного ученика A2 → B1.")
                     .foregroundStyle(.secondary)
             }

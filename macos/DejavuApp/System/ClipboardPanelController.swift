@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 @MainActor final class ClipboardPanelController {
+    private let motion = PanelMotion()
     private unowned let app: AppEnvironment
     private var panel: ClipboardPanel?
     private var dismissal: Task<Void, Never>?
@@ -18,7 +19,7 @@ import SwiftUI
     func update() {
         guard app.clipboardModel.hasContent else {
             dismissal?.cancel()
-            panel?.orderOut(nil)
+            motion.hide(panel)
             hovering = false
             return
         }
@@ -44,13 +45,13 @@ import SwiftUI
                 onClose: { [weak self] in self?.app.clipboardModel.clear() },
                 onHover: { [weak self] value in self?.setHovering(value) },
                 onResize: { [weak self] in self?.position() })
-                .environment(app).modelContainer(app.container)
+                .modifier(DejavuAppearance()).environment(app).modelContainer(app.container)
                 .environment(\.locale, Locale(identifier: "ru_RU")))
             self.panel = panel
         }
         position()
         // Do not activate the app or take keyboard focus from the foreground app.
-        panel?.orderFrontRegardless()
+        if let panel { motion.show(panel, takesFocus: false) }
         scheduleDismissal()
     }
 

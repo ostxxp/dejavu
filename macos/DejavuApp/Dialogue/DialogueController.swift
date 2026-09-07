@@ -3,6 +3,7 @@ import SwiftUI
 import CoreGraphics
 
 @MainActor final class DialogueController {
+    private let motion = PanelMotion()
     private unowned let app: AppEnvironment
     private var panel: DialoguePanel?
     private var timer: Task<Void, Never>?
@@ -108,7 +109,7 @@ import CoreGraphics
         }
     }
     private func updatePanel() {
-        guard app.dialogue.isOpen else { panel?.orderOut(nil); return }
+        guard app.dialogue.isOpen else { motion.hide(panel); return }
         guard sessionAvailable else { app.dialogue.close(); return }
         // Recheck after generation too: the user may have entered a meeting while waiting.
         if automatic && app.dialogue.answer.isEmpty && !unobtrusive { app.dialogue.close(); return }
@@ -119,7 +120,7 @@ import CoreGraphics
             value.collectionBehavior = [.canJoinAllSpaces]
             value.isOpaque = false; value.backgroundColor = .clear; value.hasShadow = true
             value.onClose = { [weak self] in self?.app.dialogue.close() }
-            value.contentView = NSHostingView(rootView: DialogueView().environment(app).environment(\.locale, Locale(identifier: "ru_RU")))
+            value.contentView = NSHostingView(rootView: DialogueView().modifier(DejavuAppearance()).environment(app).environment(\.locale, Locale(identifier: "ru_RU")))
             panel = value
         }
         let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main
@@ -128,7 +129,7 @@ import CoreGraphics
             let width = min(420, bounds.width - 32), height = min(640, bounds.height - 32)
             panel?.setFrame(NSRect(x: bounds.maxX - width - 16, y: bounds.minY + 16, width: width, height: height), display: true)
         }
-        if automatic { panel?.orderFrontRegardless() } else { panel?.makeKeyAndOrderFront(nil) }
+        if let panel { motion.show(panel, takesFocus: !automatic) }
     }
 }
 

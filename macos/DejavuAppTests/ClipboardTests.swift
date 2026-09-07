@@ -190,7 +190,23 @@ import XCTest
         XCTAssertTrue(panel.isVisible)
         controller.setHovering(false)
         await settle { !app.clipboardModel.hasContent }
+        await settle { !panel.isVisible }
         XCTAssertFalse(panel.isVisible)
+    }
+
+    func testReopeningDuringFadeDoesNotDismissNewPanel() async throws {
+        let panel = NSPanel(contentRect: NSRect(x: 100, y: 100, width: 100, height: 100),
+                            styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        let motion = PanelMotion()
+        defer { panel.orderOut(nil) }
+        motion.show(panel, takesFocus: false)
+        motion.hide(panel)
+        motion.show(panel, takesFocus: false)
+        try await Task.sleep(for: .milliseconds(350))
+        XCTAssertTrue(panel.isVisible)
+        XCTAssertEqual(panel.alphaValue, 1, accuracy: 0.01)
+        motion.hide(panel)
+        await settle { !panel.isVisible }
     }
 
     func testPhaseTwoSettingsMigrateWithClipboardDisabled() throws {
@@ -213,6 +229,8 @@ import XCTest
         XCTAssertFalse(settings.clipboardAutomatic)
         XCTAssertTrue(settings.clipboardShowPanel)
         XCTAssertTrue(settings.clipboardHistory)
+        XCTAssertEqual(settings.accent, .lavender)
+        XCTAssertTrue(settings.playfulDetails)
         XCTAssertTrue(settings.welcomeCompleted) // Existing installations are not interrupted by first-run UI.
     }
 

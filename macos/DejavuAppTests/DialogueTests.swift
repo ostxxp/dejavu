@@ -4,6 +4,19 @@ import XCTest
 @testable import DejavuApp
 
 @MainActor final class DialogueTests: XCTestCase {
+    func testAppearancePersistsWithoutChangingIntegrations() throws {
+        let h = try Harness()
+        XCTAssertEqual(h.settings.accent, .lavender)
+        XCTAssertTrue(h.settings.playfulDetails)
+        try h.settings.updateAppearance(accent: .ocean, playfulDetails: false)
+        let reload = try SettingsStore(context: h.container.mainContext)
+        XCTAssertEqual(reload.accent, .ocean)
+        XCTAssertFalse(reload.playfulDetails)
+        XCTAssertFalse(reload.clipboardEnabled)
+        XCTAssertFalse(reload.bridgeEnabled)
+        XCTAssertFalse(reload.dialogueEnabled)
+    }
+
     func testOptInDefaultsAndPersistentPause() throws {
         let h = try Harness()
         XCTAssertFalse(h.settings.dialogueEnabled)

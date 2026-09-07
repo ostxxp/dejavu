@@ -10,6 +10,7 @@ struct HomeView: View {
         @Bindable var model = app.manualAnalysis
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
+                if app.settings.playfulDetails { FloatingGreeting() }
                 VStack(alignment: .leading, spacing: 9) {
                     Text("Французский, который остаётся с вами.")
                         .font(.system(size: 28, weight: .medium, design: .serif))
@@ -80,6 +81,10 @@ struct HomeView: View {
             }
             .frame(maxWidth: 760, alignment: .leading)
             .padding(32)
+            .background(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 32).fill(app.settings.accent.color.opacity(0.055))
+                    .frame(height: 300).padding(12).allowsHitTesting(false)
+            }
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .navigationTitle("Главная")

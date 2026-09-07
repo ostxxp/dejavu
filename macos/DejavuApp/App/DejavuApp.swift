@@ -29,6 +29,7 @@ import SwiftUI
         Window("Настройки", id: "settings") {
             if let environment = bootstrap.environment {
                 SettingsView()
+                    .modifier(DejavuAppearance())
                     .environment(environment)
                     .environment(\.locale, Locale(identifier: "ru_RU"))
                     .frame(minWidth: 560, minHeight: 600)
@@ -43,6 +44,13 @@ import SwiftUI
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Local build paths can retain Launch Services' previous generic icon.
+        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let icon = NSImage(contentsOf: url) {
+            NSApp.applicationIconImage = icon
+        }
+    }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 }
 

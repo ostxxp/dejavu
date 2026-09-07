@@ -77,6 +77,8 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
     var bridgeEnabled: Bool = false
     var bridgeExtensionID: String = ""
     var welcomeCompleted: Bool = true
+    var accentRaw: String = "lavender"
+    var playfulDetails: Bool = true
     var dialogueEnabled: Bool = false
     var dialogueMinutes: Int = 45
     var dialoguePausedUntil: Date?
