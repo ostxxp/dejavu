@@ -18,7 +18,7 @@ const publicError = e => e instanceof UserFacingError ? e.message : "Не уда
 const error = message => ({ok: false, error: message});
 async function settings() {
   await ready;
-  const value = await chrome.storage.local.get(["enabled", "blockedDomains", "pairingCode"]);
+  const value = await chrome.storage.local.get(["enabled", "blockedDomains", "pairingCode", "accent"]);
   return {...DEFAULTS, ...value};
 }
 async function bridge(path, body, pairingCode, signal) {
@@ -48,9 +48,9 @@ async function issuedRecords() {
   const {issued = {}} = await chrome.storage.session.get("issued");
   return Object.fromEntries(Object.entries(issued).filter(([, r]) => Date.now() - r.at < 1800000));
 }
-async function notifySettings() {
+async function notifySettings(message = {type: "CONFIG_CHANGED"}) {
   const tabs = await chrome.tabs.query({});
-  await Promise.allSettled(tabs.map(t => chrome.tabs.sendMessage(t.id, {type: "CONFIG_CHANGED"})));
+  await Promise.allSettled(tabs.map(t => chrome.tabs.sendMessage(t.id, message)));
 }
 async function dispatch(message, sender) {
   await ready;
@@ -63,7 +63,7 @@ async function dispatch(message, sender) {
         let connected = false;
         let detail = config.pairingCode ? "Приложение не отвечает" : "Подключите к Mac";
         try { const health = await bridge("/v1/health", null, config.pairingCode); connected = health.status === "ok"; detail = connected ? "Приложение подключено ✓" : detail; } catch (e) { detail = publicError(e); }
-        return {ok: true, connected, detail, enabled: config.enabled, blockedDomains: config.blockedDomains, extensionID: chrome.runtime.id};
+        return {ok: true, connected, detail, enabled: config.enabled, accent: config.accent, blockedDomains: config.blockedDomains, extensionID: chrome.runtime.id};
       }
       case "PAIR": {
         const code = message.code?.trim();
@@ -80,6 +80,10 @@ async function dispatch(message, sender) {
         await withIssuedLock(() => chrome.storage.session.remove("issued"));
         await notifySettings();
         return {ok: true};
+      case "SET_ACCENT":
+        if (!["lavender", "rose", "sage", "ocean", "apricot"].includes(message.accent)) return error("Выберите цвет из списка.");
+        await chrome.storage.local.set({accent: message.accent});
+        await notifySettings({type: "APPEARANCE_CHANGED", accent: message.accent}); return {ok: true};
       case "SET_ENABLED":
         if (typeof message.enabled !== "boolean") return error("Проверьте настройку.");
         await chrome.storage.local.set({enabled: message.enabled});
@@ -97,7 +101,7 @@ async function dispatch(message, sender) {
     return error("Неизвестное действие.");
   }
   if (!sender.tab || sender.frameId !== 0 || !allowedPage(sender.url, config)) return error("Разбор на этой странице выключен.");
-  if (message.type === "CONFIG") return {ok: true, enabled: true, paired: !!config.pairingCode};
+  if (message.type === "CONFIG") return {ok: true, enabled: true, paired: !!config.pairingCode, accent: config.accent};
   if (message.type === "CANDIDATE") {
     const text = cleanSelection(message.text);
     if (!text) return {ok: true, candidate: false};

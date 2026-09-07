@@ -1,3 +1,24 @@
+const {palettes, palette} = globalThis.DejavuPresentation;
+function applyAccent(key) {
+  for (const [name,value] of Object.entries(palette(key))) if (name !== "title") document.documentElement.style.setProperty(`--${name}`,value);
+}
+let selectedAccent = "lavender";
+function selectAccent(key) {
+  selectedAccent = Object.hasOwn(palettes,key) ? key : "lavender";
+  applyAccent(selectedAccent);
+  for (const button of document.getElementById("accents").children) button.setAttribute("aria-pressed", String(button.dataset.accent === selectedAccent));
+}
+for (const [key,value] of Object.entries(palettes)) {
+  const button=document.createElement("button"); button.type="button"; button.dataset.accent=key;
+  button.className="swatch"; button.title=value.title; button.setAttribute("aria-label",value.title);
+  const dot=document.createElement("span");dot.style.background=value.accent;dot.setAttribute("aria-hidden","true");
+  button.append(dot,document.createTextNode(value.title));
+  button.addEventListener("click",()=>run(async()=>{
+    const r=await send({type:"SET_ACCENT",accent:key});
+    if (r?.ok) selectAccent(key); else $("message").textContent=r?.error;
+  }));
+  document.getElementById("accents").append(button);
+}
 const $=id=>document.getElementById(id);
 const send=message=>chrome.runtime.sendMessage(message);
 let activeDomain;
@@ -11,6 +32,7 @@ async function refresh() {
   if (!result?.ok) {$("status").textContent=result?.error??"Подключение недоступно";return;}
   $("status").textContent=result.detail;
   $("enabled").checked=result.enabled;
+  selectAccent(result.accent);
   $("domains").value=result.blockedDomains.join("\n");
   $("extension-id").textContent=result.extensionID;
   if (!result.connected) $("pairing").open=true;

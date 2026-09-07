@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DéjàVu</title><link rel="stylesheet" href="popup.css"></head>
 <body>
-<header><h1>DéjàVu</h1><p>Французский рядом</p></header>
+<header><img src="icons/icon-128.png" alt="" width="46" height="46"><h1>DéjàVu</h1><p>Французский рядом</p></header>
 <p id="status" role="status">Проверяем подключение…</p>
 <label class="toggle">Разбор выделенного <input id="enabled" type="checkbox"></label>
+<fieldset class="appearance"><legend>Акцентный цвет</legend><div id="accents"></div></fieldset>
 <button id="recheck">Проверить подключение</button>
 <details id="pairing"><summary>Подключить к Mac</summary>
 <p>Откройте DéjàVu → Настройки → Расширение Chrome. Укажите этот ID и включите подключение:</p>
@@ -19,5 +20,6 @@
 <p id="message" role="status"></p>
 <a class="open" href="dejavu://open" target="_blank" rel="noreferrer">Открыть DéjàVu</a>
 <p class="privacy">В приложение отправляется только выделенный текст после нажатия «Разобрать». Код подключения недоступен страницам. Расширение не работает в полях ввода и на внутренних страницах Chrome.</p>
+<script src="presentation.js"></script>
 <script type="module" src="popup.js"></script>
 </body></html>

@@ -80,3 +80,13 @@ test('Unexpected browser errors are not exposed as raw technical text',async()=>
  const result=await h.send({type:'CANDIDATE',text:'bonjour'});
  assert.equal(result.ok,false);assert.ok(!result.error.includes('internal details'));
 });
+
+test('Only popup can persist an allowed accent and content gets no credentials',async()=>{
+ const h=await harness();
+ assert.equal((await h.send({type:'SET_ACCENT',accent:'rose'})).ok,false);
+ assert.equal((await h.send({type:'SET_ACCENT',accent:'url(example)'},h.popup)).ok,false);
+ assert.equal((await h.send({type:'SET_ACCENT',accent:'rose'},h.popup)).ok,true);
+ assert.equal(h.local.accent,'rose');
+ const config=await h.send({type:'CONFIG'});assert.equal(config.accent,'rose');
+ assert.equal(config.pairingCode,undefined);assert.equal(h.calls.length,0);
+});
