@@ -9,12 +9,14 @@
     <key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.5.0</string>
-    <key>CFBundleVersion</key><string>5</string>
+    <key>CFBundleShortVersionString</key><string>0.6.0</string>
+    <key>CFBundleVersion</key><string>6</string>
     <key>CFBundleURLTypes</key><array><dict>
         <key>CFBundleURLName</key><string>com.dejavu.mac.open</string>
         <key>CFBundleURLSchemes</key><array><string>dejavu</string></array>
     </dict></array>
+    <key>NSMicrophoneUsageDescription</key><string>Микрофон нужен только для вашего голосового ответа в мини-диалоге после нажатия кнопки записи.</string>
+    <key>NSSpeechRecognitionUsageDescription</key><string>DéjàVu распознаёт ваш французский ответ локально и показывает текст перед отправкой в ИИ.</string>
     <key>LSMinimumSystemVersion</key><string>$(MACOSX_DEPLOYMENT_TARGET)</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.education</string>
     <key>NSHumanReadableCopyright</key><string>DéjàVu</string>

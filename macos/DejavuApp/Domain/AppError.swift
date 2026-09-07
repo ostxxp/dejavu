@@ -5,6 +5,7 @@ enum AppError: Error, LocalizedError, Equatable {
     case unauthorized, rateLimited, network, timedOut, unavailable
     case invalidResponse, incompleteResponse, refused, storage
     case invalidExtensionID
+    case invalidDialogueInterval
     case missingFrenchVoice
 
     var errorDescription: String? {
@@ -24,6 +25,7 @@ enum AppError: Error, LocalizedError, Equatable {
         case .refused: "Сервис не смог разобрать этот запрос. Попробуйте другое выражение."
         case .storage: "Не удалось сохранить данные на этом Mac. Проверьте свободное место и повторите попытку."
         case .invalidExtensionID: "ID расширения должен содержать 32 латинские буквы от a до p. Его можно найти на странице расширений Chrome."
+        case .invalidDialogueInterval: "Укажите интервал от 10 до 240 минут."
         case .missingFrenchVoice: "Французский голос недоступен. Загрузите голос для французского языка Франции в настройках универсального доступа macOS."
         }
     }

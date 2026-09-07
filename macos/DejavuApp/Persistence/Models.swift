@@ -76,6 +76,10 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
     var saveHistory: Bool
     var bridgeEnabled: Bool = false
     var bridgeExtensionID: String = ""
+    var dialogueEnabled: Bool = false
+    var dialogueMinutes: Int = 45
+    var dialoguePausedUntil: Date?
+    var dialogueReuseVocabulary: Bool = true
     var clipboardEnabled: Bool = false
     var clipboardAutomatic: Bool = false
     var clipboardShowPanel: Bool = true

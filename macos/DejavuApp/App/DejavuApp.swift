@@ -88,6 +88,10 @@ private struct MenuBarContent: View {
             NSApp.activate(ignoringOtherApps: true)
         }
         Divider()
+        if let app = bootstrap.environment {
+            Button("Мини-диалог сейчас") { app.dialogueController.triggerNow() }
+            Button("Мини-диалоги: пауза на час") { app.dialogueController.pause(until: .now.addingTimeInterval(3600)) }
+        }
         Button("Выход") { NSApp.terminate(nil) }
     }
 

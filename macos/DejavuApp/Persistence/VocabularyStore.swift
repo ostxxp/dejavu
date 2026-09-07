@@ -5,6 +5,17 @@ import SwiftData
     private let context: ModelContext
     init(context: ModelContext) { self.context = context }
 
+    func dialogueVocabulary() throws -> [String] {
+        var descriptor = FetchDescriptor<VocabularyEntry>(predicate: #Predicate { $0.savedByUser },
+            sortBy: [SortDescriptor(\.lastSeenAt, order: .reverse)])
+        descriptor.fetchLimit = 30
+        let entries = try context.fetch(descriptor).filter { $0.french.count <= 160 }
+        // Mix recent items with a frequently encountered expression, never notes or raw queries.
+        var result = Array(entries.prefix(4).map(\.french))
+        if let frequent = entries.max(by: { $0.seenCount < $1.seenCount }), !result.contains(frequent.french) { result.append(frequent.french) }
+        return result
+    }
+
     func find(_ french: String) throws -> VocabularyEntry? {
         let normalized = ExpressionNormalizer.normalize(french)
         var descriptor = FetchDescriptor<VocabularyEntry>(predicate: #Predicate { $0.normalizedForm == normalized })

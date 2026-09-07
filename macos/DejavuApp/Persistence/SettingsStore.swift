@@ -7,6 +7,10 @@ import SwiftData
     private let record: AppSettings
     private(set) var historyRevision = 0
     private(set) var clipboardRevision = 0
+    var dialogueEnabled: Bool { record.dialogueEnabled }
+    var dialogueMinutes: Int { record.dialogueMinutes }
+    var dialoguePausedUntil: Date? { record.dialoguePausedUntil }
+    var dialogueReuseVocabulary: Bool { record.dialogueReuseVocabulary }
     var bridgeEnabled: Bool { record.bridgeEnabled }
     var bridgeExtensionID: String { record.bridgeExtensionID }
     var clipboardEnabled: Bool { record.clipboardEnabled }
@@ -28,6 +32,19 @@ import SwiftData
             context.insert(record)
             try PersistenceController.save(context)
         }
+    }
+
+    func updateDialogue(enabled: Bool, minutes: Int, reuseVocabulary: Bool) throws {
+        guard (10...240).contains(minutes) else { throw AppError.invalidDialogueInterval }
+        record.dialogueEnabled = enabled
+        record.dialogueMinutes = minutes
+        record.dialogueReuseVocabulary = reuseVocabulary
+        try PersistenceController.save(context)
+    }
+
+    func pauseDialogue(until: Date?) throws {
+        record.dialoguePausedUntil = until
+        try PersistenceController.save(context)
     }
 
     func updateBridge(enabled: Bool, extensionID: String) throws {

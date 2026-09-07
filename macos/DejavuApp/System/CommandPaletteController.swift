@@ -17,6 +17,7 @@ enum PalettePlacement {
     let shortcut = GlobalShortcut()
     private unowned let app: AppEnvironment
     private var panel: PalettePanel?
+    var isVisible: Bool { panel?.isVisible == true }
     private var started = false
     private var hiding = false
 

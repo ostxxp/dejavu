@@ -38,6 +38,12 @@ struct OpenAIProvider: LanguageModelProvider {
         } else {
             input = analysisRequest.query
         }
+        let analysis: FrenchAnalysis = try await structured(input: input, instructions: Self.instructions,
+                                                           name: "french_analysis", schema: schema)
+        return try analysis.validated()
+    }
+
+    func structured<T: Decodable>(input: Any, instructions: String, name: String, schema: Data) async throws -> T {
         guard !apiKey.isEmpty else { throw AppError.missingAPIKey }
         try Task.checkCancellation()
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -48,10 +54,10 @@ struct OpenAIProvider: LanguageModelProvider {
             "model": model,
             "store": false,
             "max_output_tokens": 4_000,
-            "instructions": Self.instructions,
+            "instructions": instructions,
             "input": input,
             "text": ["format": [
-                "type": "json_schema", "name": "french_analysis", "strict": true,
+                "type": "json_schema", "name": name, "strict": true,
                 "schema": try JSONSerialization.jsonObject(with: schema)
             ]]
         ])
@@ -80,10 +86,10 @@ struct OpenAIProvider: LanguageModelProvider {
         let contents = envelope.output.filter { $0.type == "message" }.flatMap { $0.content ?? [] }
         if contents.contains(where: { $0.type == "refusal" }) { throw AppError.refused }
         let text = contents.filter { $0.type == "output_text" }.compactMap(\.text).joined()
-        guard let analysis = try? JSONDecoder().decode(FrenchAnalysis.self, from: Data(text.utf8)) else {
+        guard let analysis = try? JSONDecoder().decode(T.self, from: Data(text.utf8)) else {
             throw AppError.invalidResponse
         }
-        return try analysis.validated()
+        return analysis
     }
 
     private static let instructions = """
