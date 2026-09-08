@@ -5,9 +5,13 @@ import SwiftData
     private let context: ModelContext
     init(context: ModelContext) { self.context = context }
 
-    func dialogueVocabulary() throws -> [String] {
+    func dialogueVocabulary(collection: VocabularyCollection? = nil) throws -> [String] {
         var descriptor = FetchDescriptor<VocabularyEntry>(predicate: #Predicate { $0.savedByUser },
             sortBy: [SortDescriptor(\.lastSeenAt, order: .reverse)])
+        if let collection {
+            let raw = collection.rawValue
+            descriptor.predicate = #Predicate { $0.savedByUser && $0.collectionRaw == raw }
+        }
         descriptor.fetchLimit = 30
         let entries = try context.fetch(descriptor).filter { $0.french.count <= 160 }
         // Mix recent items with a frequently encountered expression, never notes or raw queries.
@@ -32,7 +36,7 @@ import SwiftData
     }
 
     @discardableResult
-    func save(_ analysis: FrenchAnalysis, source: AnalysisSource) throws -> VocabularyEntry {
+    func save(_ analysis: FrenchAnalysis, source: AnalysisSource, collection: VocabularyCollection? = nil) throws -> VocabularyEntry {
         let entry: VocabularyEntry
         if let existing = try find(analysis.original) {
             entry = existing
@@ -40,8 +44,14 @@ import SwiftData
             entry = try stageEncounter(analysis, source: source, now: .now)
         }
         entry.savedByUser = true
+        if let collection { entry.collectionRaw = collection.rawValue }
         try PersistenceController.save(context)
         return entry
+    }
+
+    func setCollection(_ entry: VocabularyEntry, collection: VocabularyCollection?) throws {
+        entry.collectionRaw = collection?.rawValue ?? ""
+        try PersistenceController.save(context)
     }
 
     func update(_ entry: VocabularyEntry, saved: Bool, notes: String) throws {

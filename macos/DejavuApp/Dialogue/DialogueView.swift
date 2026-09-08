@@ -10,7 +10,7 @@ struct DialogueView: View {
             HStack {
                 VStack(alignment: .leading) {
                     Text("DéjàVu").font(.system(.title2, design: .serif))
-                    Text("Минутка французского").font(.caption).foregroundStyle(.secondary)
+                    Text(dialogue.activeCollection?.title ?? "Минутка французского").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button { dialogue.close() } label: { Image(systemName: "xmark") }.help("Закрыть мини-диалог").accessibilityLabel("Закрыть мини-диалог")
@@ -97,6 +97,15 @@ struct DialogueSettingsView: View {
     @State private var preset = 45
     var body: some View {
         Section("Мини-диалоги") {
+            Picker("Тема", selection: Binding(get: { app.settings.dialogueCollection }, set: { value in
+                do { try app.settings.setDialogueCollection(value) }
+                catch { app.dialogueSettingsError = AppError.message(for: error) }
+            })) {
+                Text("Любая ситуация").tag(Optional<VocabularyCollection>.none)
+                ForEach(VocabularyCollection.allCases) { Text($0.title).tag(Optional($0)) }
+            }
+            Text("Новая тема применяется к следующему диалогу. Сохранённая из него фраза попадёт в выбранную коллекцию.")
+                .font(.caption).foregroundStyle(.secondary)
             Toggle("Предлагать мини-диалоги", isOn: Binding(get: { app.settings.dialogueEnabled }, set: {
                 app.dialogueController.configure(enabled: $0, minutes: app.settings.dialogueMinutes, reuse: app.settings.dialogueReuseVocabulary)
             }))

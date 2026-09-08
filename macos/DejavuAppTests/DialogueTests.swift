@@ -17,6 +17,26 @@ import XCTest
         XCTAssertFalse(reload.dialogueEnabled)
     }
 
+    func testCollectionsScopeDialogueAndKeepItsOriginalThemeWhenSaving() async throws {
+        let h = try Harness()
+        let fashion = try h.vocabulary.save(PersistenceTests.analysis("une robe"), source: .manual, collection: .fashion)
+        _ = try h.vocabulary.save(PersistenceTests.analysis("un billet"), source: .manual, collection: .travel)
+        try h.settings.setDialogueCollection(.fashion)
+        let reload = try SettingsStore(context: h.container.mainContext)
+        XCTAssertEqual(reload.dialogueCollection, .fashion)
+        h.model.start(); await settle(h.model)
+        XCTAssertEqual(h.service.words, ["une robe"])
+        XCTAssertEqual(h.service.contexts.last, VocabularyCollection.fashion.contexts.first)
+        try h.settings.setDialogueCollection(.travel)
+        h.model.answer = "Oui, merci."
+        h.model.submit(); await settle(h.model)
+        h.model.savePhrase()
+        XCTAssertEqual(try h.vocabulary.find(Self.feedback.usefulPhrase)?.collection, .fashion)
+        try h.vocabulary.setCollection(fashion, collection: nil)
+        XCTAssertNil(fashion.collection)
+        XCTAssertEqual(try h.vocabulary.dialogueVocabulary(collection: .travel), ["un billet"])
+    }
+
     func testOptInDefaultsAndPersistentPause() throws {
         let h = try Harness()
         XCTAssertFalse(h.settings.dialogueEnabled)

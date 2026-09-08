@@ -6,11 +6,14 @@ struct SavedView: View {
     @Query(filter: #Predicate<VocabularyEntry> { $0.savedByUser }, sort: \VocabularyEntry.lastSeenAt, order: .reverse)
     private var entries: [VocabularyEntry]
     @State private var search = ""
+    @State private var collection: VocabularyCollection?
+    @State private var collectionError: String?
     @State private var selected: VocabularyEntry?
 
     private var filtered: [VocabularyEntry] {
-        entries.filter { search.isEmpty || $0.french.localizedStandardContains(search)
-            || $0.russianMeaning.localizedStandardContains(search) || $0.notes.localizedStandardContains(search) }
+        entries.filter { (collection == nil || $0.collection == collection) &&
+            (search.isEmpty || $0.french.localizedStandardContains(search)
+            || $0.russianMeaning.localizedStandardContains(search) || $0.notes.localizedStandardContains(search)) }
     }
 
     var body: some View {
@@ -24,22 +27,49 @@ struct SavedView: View {
                     Button("Разобрать выражение") { app.section = .home }
                 }
             } else if filtered.isEmpty {
-                ContentUnavailableView("Ничего не найдено", systemImage: "magnifyingglass",
-                                       description: Text("Попробуйте другое слово или перевод."))
+                ContentUnavailableView(collection == nil ? "Ничего не найдено" : "Коллекция ждёт свои фразы", systemImage: collection?.symbol ?? "magnifyingglass",
+                                       description: Text("Откройте сохранённое выражение и выберите для него коллекцию. Попробуйте изменить поиск или выбрать «Все»."))
             } else {
                 List(filtered) { entry in
                     Button { selected = entry } label: {
                         LibraryRow(french: entry.french, translation: entry.russianMeaning,
-                                   source: entry.source.title, date: entry.lastSeenAt)
+                                   source: entry.collection.map { "\($0.title) · \(entry.source.title)" } ?? entry.source.title, date: entry.lastSeenAt)
                     }.buttonStyle(.plain)
                 }
             }
+        }
+        .safeAreaInset(edge: .top) {
+            VStack(alignment: .leading, spacing: 10) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        collectionButton(nil)
+                        ForEach(VocabularyCollection.allCases) { collectionButton($0) }
+                    }
+                }
+                if let collection {
+                    Button("Мини-диалог: \(collection.title)", systemImage: "bubble.left.and.bubble.right") {
+                        do {
+                            try app.settings.setDialogueCollection(collection)
+                            app.dialogue.close()
+                            app.dialogueController.triggerNow()
+                        } catch { collectionError = AppError.message(for: error) }
+                    }
+                }
+                if let collectionError { Text(collectionError).foregroundStyle(.red).font(.caption) }
+            }.padding(16).background(.bar)
         }
         .navigationTitle("Сохранённое")
         .searchable(text: $search, prompt: "Найти выражение, перевод или заметку")
         .sheet(item: $selected) { entry in
             LibraryDetail(analysis: entry.analysis, source: entry.source, entry: entry)
         }
+    }
+    private func collectionButton(_ value: VocabularyCollection?) -> some View {
+        Button { collection = value } label: {
+            Label(value?.title ?? "Все", systemImage: value?.symbol ?? "square.grid.2x2")
+                .padding(.horizontal, 9).padding(.vertical, 7)
+                .background(collection == value ? app.settings.accent.color.opacity(0.18) : .clear, in: Capsule())
+        }.buttonStyle(.plain).accessibilityValue(collection == value ? "Выбрано" : "")
     }
 }
 
@@ -123,6 +153,13 @@ private struct LibraryDetail: View {
                     else { Text("Не удалось прочитать этот разбор.").foregroundStyle(.secondary) }
                     if let entry {
                         Divider()
+                        Picker("Коллекция", selection: Binding(get: { entry.collection }, set: { value in
+                            do { try app.vocabulary.setCollection(entry, collection: value); errorMessage = nil }
+                            catch { errorMessage = AppError.message(for: error) }
+                        })) {
+                            Text("Без коллекции").tag(Optional<VocabularyCollection>.none)
+                            ForEach(VocabularyCollection.allCases) { Text($0.title).tag(Optional($0)) }
+                        }
                         Text("Моя заметка").font(.headline)
                         TextField("Что хочется запомнить?", text: $notes, axis: .vertical)
                             .lineLimit(3...8).textFieldStyle(.roundedBorder)

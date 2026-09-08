@@ -17,6 +17,8 @@ import SwiftData
     var savedByUser: Bool
     var difficulty: String?
     var notes: String
+    var collectionRaw: String = ""
+    var collection: VocabularyCollection? { VocabularyCollection(rawValue: collectionRaw) }
     var analysisData: Data
 
     var source: AnalysisSource { AnalysisSource(rawValue: sourceRaw) ?? .manual }
@@ -79,6 +81,7 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
     var welcomeCompleted: Bool = true
     var accentRaw: String = "lavender"
     var playfulDetails: Bool = true
+    var dialogueCollectionRaw: String = ""
     var dialogueEnabled: Bool = false
     var dialogueMinutes: Int = 45
     var dialoguePausedUntil: Date?
@@ -112,5 +115,35 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
         query = request.query
         requestData = data
         lastUsedAt = now
+    }
+}
+
+// Curated collections use stable identifiers; an empty value means no collection.
+enum VocabularyCollection: String, CaseIterable, Identifiable, Sendable {
+    case dates, fashion, travel, messages
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .dates: "Свидания"
+        case .fashion: "Мода"
+        case .travel: "Путешествия"
+        case .messages: "Переписка"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .dates: "heart"
+        case .fashion: "tshirt"
+        case .travel: "airplane"
+        case .messages: "bubble.left.and.bubble.right"
+        }
+    }
+    var contexts: [String] {
+        switch self {
+        case .dates: ["свидание: знакомство", "свидание: пригласить на кофе", "свидание: рассказать о себе", "свидание: совместные планы"]
+        case .fashion: ["мода: выбрать наряд", "мода: примерка и размер", "мода: обсудить стиль", "мода: покупка одежды"]
+        case .travel: ["путешествия: заселение в отель", "путешествия: спросить дорогу", "путешествия: заказать в кафе", "путешествия: купить билет"]
+        case .messages: ["переписка: договориться о встрече", "переписка: перенести планы", "переписка: поблагодарить друга", "переписка: вежливо уточнить"]
+        }
     }
 }

@@ -11,6 +11,7 @@ import Observation
     private(set) var isLoading = false
     private(set) var scenario: DialogueScenario?
     private(set) var feedback: DialogueFeedback?
+    private(set) var activeCollection: VocabularyCollection?
     private(set) var saved = false
     private(set) var recentQuestions: [String] = []
     private(set) var contextIndex = 0
@@ -30,11 +31,14 @@ import Observation
         isOpen = true; isLoading = true; errorMessage = nil; answer = ""; feedback = nil; scenario = nil; saved = false
         let token = UUID(); revision = token
         let index = contextIndex
+        let collection = settings.dialogueCollection
+        activeCollection = collection
+        let contexts = collection?.contexts ?? Self.contexts
         task = Task { [weak self] in
             guard let self else { return }
             do {
-                let words = settings.dialogueReuseVocabulary ? try vocabulary.dialogueVocabulary() : []
-                let value = try await service.scenario(context: Self.contexts[index % Self.contexts.count],
+                let words = settings.dialogueReuseVocabulary ? try vocabulary.dialogueVocabulary(collection: collection) : []
+                let value = try await service.scenario(context: contexts[index % contexts.count],
                     recent: recentQuestions, vocabulary: words, stretch: index % 5 == 4).validated()
                 guard revision == token, !Task.isCancelled else { return }
                 guard !recentQuestions.contains(where: { ExpressionNormalizer.normalize($0) == ExpressionNormalizer.normalize(value.question) }) else {
@@ -73,7 +77,7 @@ import Observation
     }
     func savePhrase() {
         guard let feedback, !saved else { return }
-        do { try vocabulary.save(feedback.phraseAnalysis, source: .conversationGhost); saved = true; errorMessage = nil }
+        do { try vocabulary.save(feedback.phraseAnalysis, source: .conversationGhost, collection: activeCollection); saved = true; errorMessage = nil }
         catch { errorMessage = AppError.message(for: error) }
     }
     func close() {

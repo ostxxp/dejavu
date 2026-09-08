@@ -10,6 +10,7 @@ import SwiftData
     var accent: AppAccent { AppAccent(rawValue: record.accentRaw) ?? .lavender }
     var playfulDetails: Bool { record.playfulDetails }
     var welcomeCompleted: Bool { record.welcomeCompleted }
+    var dialogueCollection: VocabularyCollection? { VocabularyCollection(rawValue: record.dialogueCollectionRaw) }
     var dialogueEnabled: Bool { record.dialogueEnabled }
     var dialogueMinutes: Int { record.dialogueMinutes }
     var dialoguePausedUntil: Date? { record.dialoguePausedUntil }
@@ -45,6 +46,11 @@ import SwiftData
 
     func completeWelcome() throws {
         record.welcomeCompleted = true
+        try PersistenceController.save(context)
+    }
+
+    func setDialogueCollection(_ collection: VocabularyCollection?) throws {
+        record.dialogueCollectionRaw = collection?.rawValue ?? ""
         try PersistenceController.save(context)
     }
 
