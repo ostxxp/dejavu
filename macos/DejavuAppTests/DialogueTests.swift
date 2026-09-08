@@ -37,6 +37,17 @@ import XCTest
         XCTAssertEqual(try h.vocabulary.dialogueVocabulary(collection: .travel), ["un billet"])
     }
 
+    func testMascotCelebratesOnlyExplicitSavesAndCanBeDisabled() throws {
+        let h = try Harness()
+        XCTAssertNil(h.vocabulary.lastSavedAt)
+        try h.vocabulary.recordEncounter(PersistenceTests.analysis("bonjour"), source: .manual)
+        XCTAssertNil(h.vocabulary.lastSavedAt)
+        try h.vocabulary.save(PersistenceTests.analysis("bonjour"), source: .manual)
+        XCTAssertNotNil(h.vocabulary.lastSavedAt)
+        try h.settings.setMascotEnabled(false)
+        XCTAssertFalse(try SettingsStore(context: h.container.mainContext).mascotEnabled)
+    }
+
     func testOptInDefaultsAndPersistentPause() throws {
         let h = try Harness()
         XCTAssertFalse(h.settings.dialogueEnabled)

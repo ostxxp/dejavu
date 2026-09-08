@@ -20,6 +20,11 @@ struct SettingsView: View {
                 AccentSwatches(selected: app.settings.accent) { value in
                     perform { try app.settings.updateAppearance(accent: value, playfulDetails: app.settings.playfulDetails) }
                 }
+                Toggle("Персонаж Déjà", isOn: Binding(get: { app.settings.mascotEnabled }, set: { value in
+                    perform { try app.settings.setMascotEnabled(value) }
+                }))
+                Text("Déjà думает во время разбора, радуется сохранённым фразам и отдыхает в покое. Не присылает уведомлений.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Toggle("Милые детали", isOn: Binding(
                     get: { app.settings.playfulDetails },
                     set: { value in perform { try app.settings.updateAppearance(accent: app.settings.accent, playfulDetails: value) } }))

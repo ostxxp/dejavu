@@ -12,6 +12,7 @@ struct CommandPaletteView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 17) {
                 HStack {
+                    if app.settings.mascotEnabled { DejaCompanion(compact: true) }
                     Text("DéjàVu").font(.system(.headline, design: .serif))
                     Text("Быстрый помощник").font(.caption).foregroundStyle(.secondary)
                     Spacer()

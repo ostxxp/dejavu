@@ -148,3 +148,76 @@ struct AccentSwatches: View {
         .padding(.vertical, 6)
     }
 }
+
+private struct DejaActivity: Hashable {
+    let busy: Bool
+    let saved: Date?
+    let active: Bool
+}
+
+struct DejaCompanion: View {
+    var compact = false
+    @Environment(AppEnvironment.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var celebrating = false
+    @State private var resting = false
+    private static let portrait = Bundle.main.url(forResource: "AppIcon", withExtension: "icns")
+        .flatMap(NSImage.init(contentsOf:)) ?? NSImage(size: NSSize(width: 64, height: 64))
+    private var busy: Bool {
+        app.manualAnalysis.isLoading || app.commandPaletteModel.isLoading || app.clipboardModel.isLoading || app.dialogue.isLoading
+    }
+    private var status: String {
+        if busy { return "Déjà задумался…" }
+        if celebrating { return "Ещё одна фраза с вами!" }
+        if resting { return "Déjà отдыхает" }
+        return "Déjà рядом"
+    }
+    var body: some View {
+        HStack(spacing: 16) {
+            avatar
+            if !compact {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(status).font(.headline)
+                    Text(busy ? "Разбираемся во французском" : resting ? "Можно никуда не спешить" : "Маленький шаг — уже шаг")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(compact ? 0 : 16)
+        .background(app.settings.accent.color.opacity(compact ? 0 : 0.09), in: RoundedRectangle(cornerRadius: 24))
+        .accessibilityElement(children: .ignore).accessibilityLabel(status)
+        .task(id: DejaActivity(busy: busy, saved: app.vocabulary.lastSavedAt, active: scenePhase == .active)) {
+            resting = false
+            celebrating = false
+            guard !busy else { return }
+            guard scenePhase == .active else { resting = true; return }
+            if let saved = app.vocabulary.lastSavedAt, Date.now.timeIntervalSince(saved) < 3 {
+                celebrating = true
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                celebrating = false
+            }
+            do { try await Task.sleep(for: .seconds(45)) } catch { return }
+            resting = true
+        }
+    }
+    private var avatar: some View {
+        ZStack(alignment: .topTrailing) {
+            Image(nsImage: Self.portrait).resizable().interpolation(.high)
+                .frame(width: compact ? 32 : 68, height: compact ? 32 : 68)
+                .rotationEffect(.degrees(resting ? -14 : celebrating ? 9 : 0))
+                .scaleEffect(celebrating ? 1.08 : 1)
+                .opacity(resting ? 0.75 : 1)
+            Image(systemName: busy ? "ellipsis.bubble.fill" : celebrating ? "sparkles" : resting ? "moon.zzz.fill" : "heart.fill")
+                .font(.system(size: compact ? 11 : 18))
+                .foregroundStyle(app.settings.accent.color)
+                .padding(3).background(.background, in: Circle())
+                .offset(x: 5, y: -4)
+        }
+        .animation(reduceMotion ? nil : .spring(duration: 0.45), value: celebrating)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.6), value: resting)
+        .symbolEffect(.pulse, options: .repeating, isActive: busy && !reduceMotion && scenePhase == .active)
+        .allowsHitTesting(false)
+    }
+}

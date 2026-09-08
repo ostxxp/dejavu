@@ -8,6 +8,7 @@ struct DialogueView: View {
         @Bindable var dialogue = app.dialogue
         VStack(alignment: .leading, spacing: 0) {
             HStack {
+                if app.settings.mascotEnabled { DejaCompanion(compact: true) }
                 VStack(alignment: .leading) {
                     Text("DéjàVu").font(.system(.title2, design: .serif))
                     Text(dialogue.activeCollection?.title ?? "Минутка французского").font(.caption).foregroundStyle(.secondary)

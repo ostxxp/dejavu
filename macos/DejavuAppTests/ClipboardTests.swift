@@ -231,6 +231,7 @@ import XCTest
         XCTAssertTrue(settings.clipboardHistory)
         XCTAssertEqual(settings.accent, .lavender)
         XCTAssertTrue(settings.playfulDetails)
+        XCTAssertTrue(settings.mascotEnabled)
         XCTAssertNil(settings.dialogueCollection)
         XCTAssertTrue(settings.welcomeCompleted) // Existing installations are not interrupted by first-run UI.
     }

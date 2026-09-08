@@ -1,7 +1,9 @@
 import Foundation
 import SwiftData
+import Observation
 
-@MainActor final class VocabularyStore {
+@MainActor @Observable final class VocabularyStore {
+    private(set) var lastSavedAt: Date?
     private let context: ModelContext
     init(context: ModelContext) { self.context = context }
 
@@ -46,6 +48,7 @@ import SwiftData
         entry.savedByUser = true
         if let collection { entry.collectionRaw = collection.rawValue }
         try PersistenceController.save(context)
+        lastSavedAt = .now
         return entry
     }
 

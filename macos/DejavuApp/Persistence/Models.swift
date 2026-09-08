@@ -81,6 +81,7 @@ enum AIProvider: String, CaseIterable, Identifiable, Sendable {
     var welcomeCompleted: Bool = true
     var accentRaw: String = "lavender"
     var playfulDetails: Bool = true
+    var mascotEnabled: Bool = true
     var dialogueCollectionRaw: String = ""
     var dialogueEnabled: Bool = false
     var dialogueMinutes: Int = 45

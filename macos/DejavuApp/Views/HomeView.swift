@@ -10,7 +10,8 @@ struct HomeView: View {
         @Bindable var model = app.manualAnalysis
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                if app.settings.playfulDetails { FloatingGreeting() }
+                if app.settings.mascotEnabled { DejaCompanion() }
+                else if app.settings.playfulDetails { FloatingGreeting() }
                 VStack(alignment: .leading, spacing: 9) {
                     Text("Французский, который остаётся с вами.")
                         .font(.system(size: 28, weight: .medium, design: .serif))

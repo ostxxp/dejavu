@@ -10,6 +10,7 @@ struct ClipboardResultView: View {
         @Bindable var model = app.clipboardModel
         VStack(alignment: .leading, spacing: 0) {
             HStack {
+                if app.settings.mascotEnabled { DejaCompanion(compact: true) }
                 Text("DéjàVu").font(.system(.headline, design: .serif))
                 Text("Разбор скопированного").font(.caption).foregroundStyle(.secondary)
                 Spacer()
