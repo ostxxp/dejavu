@@ -76,6 +76,8 @@ async function dispatch(message, sender) {
   const config = await settings();
   if (trusted) {
     switch (message.type) {
+      case "PREFERENCES":
+        return {ok:true, enabled:config.enabled, recognitionEnabled:config.recognitionEnabled, accent:config.accent, blockedDomains:config.blockedDomains, extensionID:chrome.runtime.id};
       case "STATUS": {
         let connected = false;
         let detail = config.pairingCode ? "Приложение не отвечает" : "Подключите к Mac";

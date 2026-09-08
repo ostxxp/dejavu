@@ -19,7 +19,7 @@ async function harness(){
 }
 test('Content cannot obtain the pairing code or change configuration',async()=>{
  const h=await harness();
- for(const type of ['STATUS','PAIR','SET_ENABLED','SET_DOMAINS','DISCONNECT'])assert.equal((await h.send({type,code,enabled:false,domains:[]})).ok,false);
+ for(const type of ['STATUS','PREFERENCES','PAIR','SET_ENABLED','SET_DOMAINS','DISCONNECT'])assert.equal((await h.send({type,code,enabled:false,domains:[]})).ok,false);
  const config=await h.send({type:'CONFIG'});assert.equal(config.ok,true);assert.ok(!JSON.stringify(config).includes(code));
  assert.deepEqual(h.levels,['TRUSTED_CONTEXTS','TRUSTED_CONTEXTS']);assert.equal(h.calls.length,0);
 });
@@ -117,4 +117,13 @@ test('Disabling recognition rejects an in-flight vocabulary response',async()=>{
  await h.send({type:'SET_RECOGNITION',enabled:false},h.popup);
  finish(new Response('[]',{status:200}));
  assert.equal((await request).ok,false);
+});
+
+test('Popup preferences read persisted recognition without contacting the Mac',async()=>{
+ const h=await harness();
+ await h.send({type:'SET_RECOGNITION',enabled:true},h.popup);
+ const result=await h.send({type:'PREFERENCES'},h.popup);
+ assert.equal(result.recognitionEnabled,true);
+ assert.equal(result.pairingCode,undefined);
+ assert.equal(h.calls.length,0);
 });

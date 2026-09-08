@@ -22,23 +22,32 @@ for (const [key,value] of Object.entries(palettes)) {
 const $=id=>document.getElementById(id);
 const send=message=>chrome.runtime.sendMessage(message);
 let activeDomain;
+let preferenceRevision = 0;
 async function run(action) {
   $("message").textContent="";
   try {await action();} catch {$("message").textContent="Не удалось выполнить действие. Откройте расширение заново.";}
 }
 async function refresh() {
   $("status").textContent="Проверяем подключение…";
+  const revision = preferenceRevision;
+  const preferences = await send({type:"PREFERENCES"});
+  if (!preferences?.ok) throw new Error("preferences unavailable");
+  if (revision === preferenceRevision) {
+    $("enabled").checked=preferences.enabled===true;
+    $("recognition").checked=preferences.recognitionEnabled===true;
+    selectAccent(preferences.accent);
+    $("domains").value=preferences.blockedDomains.join("\n");
+  }
+  $("enabled").disabled=false;
+  $("recognition").disabled=false;
+  $("extension-id").textContent=preferences.extensionID;
   const result=await send({type:"STATUS"});
   if (!result?.ok) {$("status").textContent=result?.error??"Подключение недоступно";return;}
+  // Health may take seconds. Its settings snapshot must never overwrite a new click.
   $("status").textContent=result.detail;
-  $("enabled").checked=result.enabled;
-  $("recognition").checked=result.recognitionEnabled===true;
-  selectAccent(result.accent);
-  $("domains").value=result.blockedDomains.join("\n");
-  $("extension-id").textContent=result.extensionID;
   if (!result.connected) $("pairing").open=true;
 }
-$("enabled").addEventListener("change",()=>run(async()=>{const r=await send({type:"SET_ENABLED",enabled:$("enabled").checked});if(!r?.ok)$("message").textContent=r?.error;}));
+$("enabled").addEventListener("change",()=>run(async()=>{preferenceRevision++;const r=await send({type:"SET_ENABLED",enabled:$("enabled").checked});if(!r?.ok)$("message").textContent=r?.error;}));
 $("recheck").addEventListener("click",()=>run(refresh));
 $("connect").addEventListener("click",()=>run(async()=>{
   $("connect").disabled=true;
@@ -59,8 +68,13 @@ void run(async()=>{
 });
 
 $("recognition").addEventListener("change",()=>run(async()=>{
-  const r=await send({type:"SET_RECOGNITION",enabled:$("recognition").checked});
-  if(!r?.ok)$("message").textContent=r?.error;
+  preferenceRevision++;
+  const enabled=$("recognition").checked;
+  $("recognition").disabled=true;
+  try {
+    const r=await send({type:"SET_RECOGNITION",enabled});
+    if(!r?.ok) {$("recognition").checked=!enabled;$("message").textContent=r?.error??"Не удалось сохранить настройку.";}
+  } finally {$("recognition").disabled=false;}
 }));
 $("refresh-vocabulary").addEventListener("click",()=>run(async()=>{
   const r=await send({type:"REFRESH_RECOGNITION"});
