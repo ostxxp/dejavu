@@ -188,11 +188,11 @@ struct DejaCompanion: View {
         .padding(compact ? 0 : 16)
         .background(app.settings.accent.color.opacity(compact ? 0 : 0.09), in: RoundedRectangle(cornerRadius: 24))
         .accessibilityElement(children: .ignore).accessibilityLabel(status)
-        .task(id: DejaActivity(busy: busy, saved: app.vocabulary.lastSavedAt, active: scenePhase == .active)) {
+        .task(id: DejaActivity(busy: busy, saved: app.vocabulary.lastSavedAt, active: compact || scenePhase == .active)) {
             resting = false
             celebrating = false
             guard !busy else { return }
-            guard scenePhase == .active else { resting = true; return }
+            guard compact || scenePhase == .active else { resting = true; return }
             if let saved = app.vocabulary.lastSavedAt, Date.now.timeIntervalSince(saved) < 3 {
                 celebrating = true
                 do { try await Task.sleep(for: .seconds(3)) } catch { return }
@@ -217,7 +217,17 @@ struct DejaCompanion: View {
         }
         .animation(reduceMotion ? nil : .spring(duration: 0.45), value: celebrating)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.6), value: resting)
-        .symbolEffect(.pulse, options: .repeating, isActive: busy && !reduceMotion && scenePhase == .active)
+        .symbolEffect(.pulse, options: .repeating, isActive: busy && !reduceMotion && (compact || scenePhase == .active))
+        .overlay(alignment: .bottomTrailing) {
+            if busy && app.settings.playfulDetails && !reduceMotion && (compact || scenePhase == .active) {
+                Text("💕").font(.system(size: compact ? 12 : 21))
+                    .phaseAnimator([false, true]) { content, lifted in
+                        content.offset(x: lifted ? 9 : 2, y: lifted ? -16 : -3)
+                            .scaleEffect(lifted ? 1.12 : 0.7).opacity(lifted ? 1 : 0.4)
+                    } animation: { _ in .easeInOut(duration: 0.7) }
+                    .accessibilityHidden(true)
+            }
+        }
         .allowsHitTesting(false)
     }
 }
