@@ -48,7 +48,7 @@ struct BrowserBridgeSettings: View {
                     catch { message = AppError.message(for: error) }
                 }
             }
-            Text("Подключение доступно только на этом Mac. Код разрешает расширению запрашивать ИИ-разбор и сохранять полученные выражения. Ключ OpenAI в браузер не передаётся. Не публикуйте код и не вставляйте его на сайтах.")
+            Text("Подключение доступно только на этом Mac. Код разрешает расширению запрашивать ИИ-разбор и сохранять полученные выражения, а также читать сохранённые фразы и их перевод для функции «Мы уже встречались». Заметки не передаются. Ключ OpenAI в браузер не передаётся. Не публикуйте код и не вставляйте его на сайтах.")
                 .font(.caption).foregroundStyle(.secondary)
             if let error = app.browserBridge.errorMessage { Text(error).foregroundStyle(.red) }
             if let message { Text(message).font(.caption).foregroundStyle(.secondary) }

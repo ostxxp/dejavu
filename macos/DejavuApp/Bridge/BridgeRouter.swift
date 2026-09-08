@@ -59,15 +59,28 @@ import Foundation
 
     private func route(_ request: BridgeRequest) async -> BridgeResponse {
         if request.path == "/v1/health", request.method == "GET" {
-            return .json(["status": "ok", "version": "1", "appVersion": "0.8.0"])
+            return .json(["status": "ok", "version": "1", "appVersion": "0.9.0"])
         }
-        guard ["/v1/analyze", "/v1/save"].contains(request.path) else { return .error(404, "not_found", "Такого действия нет.") }
+        if request.path == "/v1/vocabulary", request.method == "GET" {
+            do { return .json(try vocabulary.recognitionEntries()) }
+            catch { return .error(500, "storage", "Не удалось прочитать сохранённые выражения.") }
+        }
+        guard ["/v1/analyze", "/v1/save", "/v1/recall"].contains(request.path) else { return .error(404, "not_found", "Такого действия нет.") }
         guard request.method == "POST" else { return .error(405, "method_not_allowed", "Используйте POST.") }
         guard request.headers["content-type"]?.split(separator: ";").first?.trimmingCharacters(in: .whitespaces).lowercased() == "application/json" else {
             return .error(415, "json_required", "Ожидается JSON.")
         }
         do {
             try Task.checkCancellation()
+            if request.path == "/v1/recall" {
+                struct Input: Decodable { let id: UUID }
+                let input = try JSONDecoder().decode(Input.self, from: request.body)
+                guard let entry = try vocabulary.recalledEntry(id: input.id) else {
+                    return .error(404, "not_saved", "Выражение больше не сохранено. Обновите подсветку.")
+                }
+                struct Output: Encodable { let french: String; let translation: String }
+                return .json(Output(french: entry.french, translation: entry.russianMeaning))
+            }
             if request.path == "/v1/save" {
                 struct Input: Decodable { let id: UUID }
                 let input = try JSONDecoder().decode(Input.self, from: request.body)

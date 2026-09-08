@@ -22,6 +22,25 @@ import Observation
         return result
     }
 
+    struct RecognitionEntry: Encodable {
+        let id: UUID
+        let french: String
+    }
+
+    func recognitionEntries() throws -> [RecognitionEntry] {
+        var descriptor = FetchDescriptor<VocabularyEntry>(predicate: #Predicate { $0.savedByUser },
+            sortBy: [SortDescriptor(\.lastSeenAt, order: .reverse)])
+        descriptor.fetchLimit = 500
+        return try context.fetch(descriptor).filter { (2...160).contains($0.french.count) }
+            .map { RecognitionEntry(id: $0.id, french: $0.french) }
+    }
+
+    func recalledEntry(id: UUID) throws -> VocabularyEntry? {
+        var descriptor = FetchDescriptor<VocabularyEntry>(predicate: #Predicate { $0.id == id && $0.savedByUser })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+
     func find(_ french: String) throws -> VocabularyEntry? {
         let normalized = ExpressionNormalizer.normalize(french)
         var descriptor = FetchDescriptor<VocabularyEntry>(predicate: #Predicate { $0.normalizedForm == normalized })

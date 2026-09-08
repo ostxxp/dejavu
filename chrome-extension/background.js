@@ -6,6 +6,23 @@ const ready = Promise.all([
   chrome.storage.session.setAccessLevel({accessLevel: "TRUSTED_CONTEXTS"})
 ]);
 const pending = new Map();
+let recognitionCache, recognitionWork, recognitionRevision = 0;
+function clearRecognition() { recognitionRevision++; recognitionCache = undefined; recognitionWork = undefined; }
+async function recognitionList(config) {
+  if (recognitionCache && recognitionCache.code === config.pairingCode && Date.now()-recognitionCache.at < 60000) return recognitionCache.entries;
+  if (recognitionWork?.code === config.pairingCode) return recognitionWork.promise;
+  const revision = recognitionRevision;
+  const promise = (async () => {
+    const result = await bridge("/v1/vocabulary",null,config.pairingCode);
+    if (!Array.isArray(result) || result.length>500 || !result.every(e => e && typeof e.id === "string" && /^[a-f0-9-]{36}$/i.test(e.id) && typeof e.french === "string" && e.french.length>=2 && e.french.length<=320)) throw new UserFacingError("Не удалось прочитать словарь. Обновите DéjàVu на Mac.");
+    const entries = result.map(({id,french})=>({id,french}));
+    if (revision !== recognitionRevision) throw new UserFacingError("Подсветка обновляется. Повторите попытку.");
+    recognitionCache = {code:config.pairingCode,at:Date.now(),entries};
+    return entries;
+  })();
+  recognitionWork = {code:config.pairingCode,promise};
+  try { return await promise; } finally { if (recognitionWork?.promise === promise) recognitionWork=undefined; }
+}
 let issuedQueue = Promise.resolve();
 function withIssuedLock(operation) {
   const work = issuedQueue.then(operation);
@@ -18,7 +35,7 @@ const publicError = e => e instanceof UserFacingError ? e.message : "Не уда
 const error = message => ({ok: false, error: message});
 async function settings() {
   await ready;
-  const value = await chrome.storage.local.get(["enabled", "blockedDomains", "pairingCode", "accent"]);
+  const value = await chrome.storage.local.get(["enabled", "blockedDomains", "pairingCode", "accent", "recognitionEnabled"]);
   return {...DEFAULTS, ...value};
 }
 async function bridge(path, body, pairingCode, signal) {
@@ -63,23 +80,32 @@ async function dispatch(message, sender) {
         let connected = false;
         let detail = config.pairingCode ? "Приложение не отвечает" : "Подключите к Mac";
         try { const health = await bridge("/v1/health", null, config.pairingCode); connected = health.status === "ok"; detail = connected ? "Приложение подключено ✓" : detail; } catch (e) { detail = publicError(e); }
-        return {ok: true, connected, detail, enabled: config.enabled, accent: config.accent, blockedDomains: config.blockedDomains, extensionID: chrome.runtime.id};
+        return {ok: true, connected, detail, enabled: config.enabled, recognitionEnabled: config.recognitionEnabled, accent: config.accent, blockedDomains: config.blockedDomains, extensionID: chrome.runtime.id};
       }
       case "PAIR": {
         const code = message.code?.trim();
         const health = await bridge("/v1/health", null, code);
         if (health.status !== "ok") return error("Не удалось подтвердить подключение.");
         for (const controller of pending.values()) controller.abort();
+        clearRecognition();
         await chrome.storage.local.set({pairingCode: code});
         await withIssuedLock(() => chrome.storage.session.remove("issued"));
         return {ok: true};
       }
       case "DISCONNECT":
+        clearRecognition();
         for (const controller of pending.values()) controller.abort();
         await chrome.storage.local.remove("pairingCode");
         await withIssuedLock(() => chrome.storage.session.remove("issued"));
         await notifySettings();
         return {ok: true};
+      case "SET_RECOGNITION":
+        if (typeof message.enabled !== "boolean") return error("Проверьте настройку.");
+        clearRecognition();
+        await chrome.storage.local.set({recognitionEnabled:message.enabled});
+        await notifySettings(); return {ok:true};
+      case "REFRESH_RECOGNITION":
+        clearRecognition(); await notifySettings({type:"VOCABULARY_CHANGED"}); return {ok:true};
       case "SET_ACCENT":
         if (!["lavender", "rose", "sage", "ocean", "apricot"].includes(message.accent)) return error("Выберите цвет из списка.");
         await chrome.storage.local.set({accent: message.accent});
@@ -87,7 +113,7 @@ async function dispatch(message, sender) {
       case "SET_ENABLED":
         if (typeof message.enabled !== "boolean") return error("Проверьте настройку.");
         await chrome.storage.local.set({enabled: message.enabled});
-        if (!message.enabled) { for (const controller of pending.values()) controller.abort(); chrome.tts.stop(); }
+        if (!message.enabled) { clearRecognition(); for (const controller of pending.values()) controller.abort(); chrome.tts.stop(); }
         await notifySettings(); return {ok: true};
       case "SET_DOMAINS": {
         if (!Array.isArray(message.domains) || message.domains.length > 100) return error("Укажите не больше 100 сайтов.");
@@ -101,7 +127,22 @@ async function dispatch(message, sender) {
     return error("Неизвестное действие.");
   }
   if (!sender.tab || sender.frameId !== 0 || !allowedPage(sender.url, config)) return error("Разбор на этой странице выключен.");
-  if (message.type === "CONFIG") return {ok: true, enabled: true, paired: !!config.pairingCode, accent: config.accent};
+  if (message.type === "CONFIG") return {ok: true, enabled: true, paired: !!config.pairingCode, accent: config.accent, recognitionEnabled: config.recognitionEnabled};
+  if (["RECOGNITION_LIST", "RECALL"].includes(message.type)) {
+    if (!config.recognitionEnabled) return error("Узнавание выражений выключено.");
+    const entries = await recognitionList(config);
+    let response;
+    if (message.type === "RECOGNITION_LIST") response = {ok:true,entries};
+    else {
+      if (!entries.some(e=>e.id===message.id)) return error("Выражение больше не сохранено. Обновите подсветку.");
+      const value = await bridge("/v1/recall",{id:message.id},config.pairingCode);
+      if (typeof value.french !== "string" || value.french.length>320 || typeof value.translation !== "string" || value.translation.length>8000) return error("Не удалось прочитать перевод.");
+      response = {ok:true,french:value.french,translation:value.translation};
+    }
+    const latest = await settings();
+    if (!latest.recognitionEnabled || latest.pairingCode !== config.pairingCode || !allowedPage(sender.url,latest)) return error("Узнавание выражений выключено.");
+    return response;
+  }
   if (message.type === "CANDIDATE") {
     const text = cleanSelection(message.text);
     if (!text) return {ok: true, candidate: false};
@@ -141,7 +182,11 @@ async function dispatch(message, sender) {
     const records = await issuedRecords();
     const record = records[message.id];
     if (!record || record.tab !== sender.tab.id || record.document !== (sender.documentId ?? sender.url)) return error("Разбор устарел. Получите его заново.");
-    if (message.type === "SAVE") return {ok: true, ...await bridge("/v1/save", {id: message.id}, config.pairingCode)};
+    if (message.type === "SAVE") {
+      const value = await bridge("/v1/save", {id: message.id}, config.pairingCode);
+      clearRecognition(); await notifySettings({type:"VOCABULARY_CHANGED"});
+      return {ok:true,...value};
+    }
     const voices = await chrome.tts.getVoices();
     const voice = voices.find(v => v.lang?.replace("_", "-").toLowerCase() === "fr-fr" && v.remote !== true && !v.extensionId);
     if (!voice) return error("Французский голос недоступен. Загрузите голос Франции в настройках macOS.");

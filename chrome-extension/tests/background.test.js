@@ -90,3 +90,29 @@ test('Only popup can persist an allowed accent and content gets no credentials',
  const config=await h.send({type:'CONFIG'});assert.equal(config.accent,'rose');
  assert.equal(config.pairingCode,undefined);assert.equal(h.calls.length,0);
 });
+
+test('Recognition is opt-in, excludes notes and reveals only a known saved ID without AI',async()=>{
+ const h=await harness(),savedID='11111111-1111-1111-1111-111111111111';
+ assert.equal((await h.send({type:'RECOGNITION_LIST'})).ok,false);assert.equal(h.calls.length,0);
+ assert.equal((await h.send({type:'SET_RECOGNITION',enabled:true})).ok,false);
+ await h.send({type:'SET_RECOGNITION',enabled:true},h.popup);
+ const paths=[];
+ globalThis.fetch=async(url)=>{paths.push(url);return new Response(JSON.stringify(url.endsWith('/vocabulary')?[{id:savedID,french:'bonjour',notes:'example private note'}]:{french:'bonjour',translation:'привет'}),{status:200})};
+ const list=await h.send({type:'RECOGNITION_LIST'});
+ assert.deepEqual(list.entries,[{id:savedID,french:'bonjour'}]);
+ assert.equal((await h.send({type:'RECALL',id:'unknown'})).ok,false);
+ assert.equal((await h.send({type:'RECALL',id:savedID})).translation,'привет');
+ assert.equal(paths.length,2);assert.ok(paths.every(p=>!p.endsWith('/analyze')));
+ await h.send({type:'SET_RECOGNITION',enabled:false},h.popup);
+ assert.equal((await h.send({type:'RECALL',id:savedID})).ok,false);
+});
+
+test('Disabling recognition rejects an in-flight vocabulary response',async()=>{
+ const h=await harness();await h.send({type:'SET_RECOGNITION',enabled:true},h.popup);
+ let finish;globalThis.fetch=()=>new Promise(resolve=>{finish=resolve});
+ const request=h.send({type:'RECOGNITION_LIST'});
+ while(!finish)await new Promise(resolve=>setTimeout(resolve,1));
+ await h.send({type:'SET_RECOGNITION',enabled:false},h.popup);
+ finish(new Response('[]',{status:200}));
+ assert.equal((await request).ok,false);
+});

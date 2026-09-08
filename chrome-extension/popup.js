@@ -32,6 +32,7 @@ async function refresh() {
   if (!result?.ok) {$("status").textContent=result?.error??"Подключение недоступно";return;}
   $("status").textContent=result.detail;
   $("enabled").checked=result.enabled;
+  $("recognition").checked=result.recognitionEnabled===true;
   selectAccent(result.accent);
   $("domains").value=result.blockedDomains.join("\n");
   $("extension-id").textContent=result.extensionID;
@@ -56,3 +57,12 @@ void run(async()=>{
   $("block-current").disabled=!activeDomain;
   await refresh();
 });
+
+$("recognition").addEventListener("change",()=>run(async()=>{
+  const r=await send({type:"SET_RECOGNITION",enabled:$("recognition").checked});
+  if(!r?.ok)$("message").textContent=r?.error;
+}));
+$("refresh-vocabulary").addEventListener("click",()=>run(async()=>{
+  const r=await send({type:"REFRESH_RECOGNITION"});
+  $("message").textContent=r?.ok?"Подсветка обновляется. DéjàVu на Mac должен быть открыт.":r?.error;
+}));

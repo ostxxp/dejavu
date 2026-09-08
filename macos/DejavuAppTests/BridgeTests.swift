@@ -26,7 +26,7 @@ import XCTest
 
     func testAllEndpointsRequireAuthenticationAndRejectWebOriginsAndRebinding() async throws {
         let h = try harness()
-        for path in ["/v1/health", "/v1/analyze", "/v1/save"] {
+        for path in ["/v1/health", "/v1/analyze", "/v1/save", "/v1/vocabulary", "/v1/recall"] {
             var headers = authHeaders
             headers.removeValue(forKey: "authorization")
             let response = await h.router.handle(request(path, headers: headers))
@@ -42,6 +42,26 @@ import XCTest
         headers["origin"] = "chrome-extension://" + String(repeating: "b", count: 32)
         let rejected3 = await awaitStatus(h.router, request("/v1/health", headers: headers))
         XCTAssertEqual(rejected3, 403)
+        XCTAssertTrue(h.service.requests.isEmpty)
+    }
+
+    func testRecognitionExportsOnlySavedPhrasesAndRevealsTranslationOnRequest() async throws {
+        let h = try harness()
+        try h.vocabulary.recordEncounter(PersistenceTests.analysis("jamais"), source: .manual)
+        let entry = try h.vocabulary.save(PersistenceTests.analysis("bonjour"), source: .manual)
+        try h.vocabulary.update(entry, saved: true, notes: "example private note")
+        let list = await h.router.handle(request("/v1/vocabulary"))
+        XCTAssertEqual(list.status, 200)
+        let rows = try XCTUnwrap(JSONSerialization.jsonObject(with: list.body) as? [[String: String]])
+        XCTAssertEqual(rows.count, 1)
+        XCTAssertEqual(Set(rows[0].keys), ["id", "french"])
+        XCTAssertEqual(rows[0]["french"], "bonjour")
+        let reveal = await h.router.handle(request("/v1/recall", method: "POST", body: ["id": entry.id.uuidString]))
+        XCTAssertEqual(reveal.status, 200)
+        XCTAssertFalse(String(decoding: reveal.body, as: UTF8.self).contains("example private note"))
+        try h.vocabulary.update(entry, saved: false, notes: "")
+        let removed = await h.router.handle(request("/v1/recall", method: "POST", body: ["id": entry.id.uuidString]))
+        XCTAssertEqual(removed.status, 404)
         XCTAssertTrue(h.service.requests.isEmpty)
     }
 

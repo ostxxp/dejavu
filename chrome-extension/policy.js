@@ -1,5 +1,5 @@
 export const BASE = "http://127.0.0.1:17389";
-export const DEFAULTS = {enabled: true, blockedDomains: [], accent: "lavender"};
+export const DEFAULTS = {enabled: true, blockedDomains: [], accent: "lavender", recognitionEnabled: false};
 export function normalizedDomain(value) {
   const domain = String(value).trim().toLowerCase().replace(/^\.+|\.+$/g, "");
   if (!domain || domain.length > 253 || /[\s/:?#@]/.test(domain)) return null;

@@ -21,12 +21,15 @@
   root.append(style);
   let enabled = false, epoch = 0, timer, anchor, selectedText = "", requestID, response, details = false, saved = false;
   let surface, anchoredRange, frameID, clipParents = [];
+  let recognitionEnabled = false, recognitionEpoch = 0;
+  const recognizer = globalThis.createDejavuRecognition?.({onMatch:openRecall});
   const {palette, place} = globalThis.DejavuPresentation;
   let accent = palette("lavender");
   const highlightName = "dejavu-selection-" + crypto.randomUUID();
   const selectionStyle = document.createElement("style");
   function applyAccent(key) {
     accent = palette(key);
+    recognizer?.accent(accent);
     for (const name of ["accent", "soft", "ink"]) host.style.setProperty(`--${name}`, accent[name]);
     selectionStyle.textContent = `::highlight(${highlightName}){background-color:${accent.soft};color:${accent.ink}}::selection{background-color:${accent.soft};color:${accent.ink}}`;
   }
@@ -171,6 +174,7 @@
   async function selectionChanged() {
     if (!enabled) return;
     const selection=window.getSelection();
+    if (selection?.isCollapsed && surface?.dataset?.recall === "true") return;
     if (!selection || selection.isCollapsed || !selection.rangeCount || blockedNode(selection.anchorNode) || blockedNode(selection.focusNode) || blockedNode(document.activeElement)) { hide(); return; }
     const range=selection.getRangeAt(0);
     const text=selection.toString().trim();
@@ -179,23 +183,52 @@
         range.startContainer===anchoredRange.startContainer && range.startOffset===anchoredRange.startOffset &&
         range.endContainer===anchoredRange.endContainer && range.endOffset===anchoredRange.endOffset) return;
     hide(); selectedText=text; anchoredRange=range.cloneRange();
-    let parent=anchoredRange.commonAncestorContainer;
-    if (parent.nodeType!==Node.ELEMENT_NODE) parent=parent.parentElement;
-    for (;parent && parent!==document.body;parent=parent.parentElement) {
-      const css=getComputedStyle(parent);
-      if (/(auto|scroll|hidden|clip)/.test(css.overflow+css.overflowX+css.overflowY)) clipParents.push(parent);
-    }
+    collectClipParents();
     const current=epoch;
     const result=await send({type:"CANDIDATE",text});
     if (current!==epoch || !enabled || !result?.candidate) return;
     highlight();
     mount(button("✦ DéjàVu · Разобрать",analyze,"bubble"));
   }
+  function collectClipParents() {
+    clipParents = [];
+    let parent = anchoredRange?.commonAncestorContainer;
+    if (parent?.nodeType !== Node.ELEMENT_NODE) parent = parent?.parentElement;
+    for (;parent && parent!==document.body;parent=parent.parentElement) {
+      const css=getComputedStyle(parent);
+      if (/(auto|scroll|hidden|clip)/.test(css.overflow+css.overflowX+css.overflowY)) clipParents.push(parent);
+    }
+  }
+  function openRecall(hit) {
+    hide(); anchoredRange=hit.range.cloneRange();collectClipParents();
+    const {card,body}=shell();
+    card.dataset.recall = "true";
+    body.append(el("p","Мы уже встречались ✨","cache"),el("h2",hit.french),el("p","Помните, что это значит?","muted"));
+    const current=epoch;
+    body.append(button("Показать перевод",async node=>{
+      node.disabled=true;
+      const value=await send({type:"RECALL",id:hit.id});
+      if(current!==epoch)return;
+      if(value?.ok){body.append(el("p",value.translation,"translation"));node.remove()}
+      else {body.append(el("p",value?.error??"Откройте DéjàVu на Mac и повторите.","notice"));node.disabled=false}
+      position();
+    }));
+    mount(card);
+  }
+  async function refreshRecognition() {
+    const current=++recognitionEpoch;
+    recognizer?.stop();
+    if(!enabled||!recognitionEnabled||document.hidden)return;
+    const value=await send({type:"RECOGNITION_LIST"});
+    if(current===recognitionEpoch&&enabled&&recognitionEnabled&&value?.ok)recognizer?.start(value.entries,accent);
+  }
   async function configure() {
-    hide();
+    hide(); recognizer?.stop(); recognitionEpoch++;
     const config=await send({type:"CONFIG"}); enabled=config?.ok===true && config.enabled===true;
+    recognitionEnabled=config?.recognitionEnabled===true;
     applyAccent(config?.accent);
     if (!enabled) hide();
+    void refreshRecognition();
   }
   root.addEventListener("pointerdown",e => {e.preventDefault();e.stopPropagation();});
   document.addEventListener("selectionchange",() => {clearTimeout(timer);timer=setTimeout(selectionChanged,180);});
@@ -205,11 +238,13 @@
   window.addEventListener("resize",schedulePosition,{passive:true});
   window.visualViewport?.addEventListener("resize",schedulePosition,{passive:true});
   window.visualViewport?.addEventListener("scroll",schedulePosition,{passive:true});
-  document.addEventListener("visibilitychange",() => { if (document.hidden) hide(); });
-  window.addEventListener("pagehide",hide);
+  document.addEventListener("visibilitychange",() => { if (document.hidden) hide(); else void refreshRecognition(); });
+  window.addEventListener("pagehide",()=>{hide();recognitionEpoch++;recognizer?.stop()});
+  window.addEventListener("focus",()=>{void refreshRecognition()});
   chrome.runtime.onMessage.addListener(message => {
     if (message.type==="CONFIG_CHANGED") void configure();
     if (message.type==="APPEARANCE_CHANGED") applyAccent(message.accent);
+    if (message.type==="VOCABULARY_CHANGED") { if(surface?.dataset?.recall === "true") hide(); void refreshRecognition(); }
   });
   void configure();
 })();
