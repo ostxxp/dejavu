@@ -17,6 +17,18 @@ struct SavedView: View {
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            collectionBar
+            savedContent.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .navigationTitle("Сохранённое")
+        .searchable(text: $search, prompt: "Найти выражение, перевод или заметку")
+        .sheet(item: $selected) { entry in
+            LibraryDetail(analysis: entry.analysis, source: entry.source, entry: entry)
+        }
+    }
+    private var savedContent: some View {
         Group {
             if entries.isEmpty {
                 ContentUnavailableView {
@@ -38,32 +50,29 @@ struct SavedView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .top) {
-            VStack(alignment: .leading, spacing: 10) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        collectionButton(nil)
-                        ForEach(VocabularyCollection.allCases) { collectionButton($0) }
-                    }
-                }
-                if let collection {
-                    Button("Мини-диалог: \(collection.title)", systemImage: "bubble.left.and.bubble.right") {
-                        do {
-                            try app.settings.setDialogueCollection(collection)
-                            app.dialogue.close()
-                            app.dialogueController.triggerNow()
-                        } catch { collectionError = AppError.message(for: error) }
-                    }
-                }
-                if let collectionError { Text(collectionError).foregroundStyle(.red).font(.caption) }
-            }.padding(16).background(.bar)
-        }
-        .navigationTitle("Сохранённое")
-        .searchable(text: $search, prompt: "Найти выражение, перевод или заметку")
-        .sheet(item: $selected) { entry in
-            LibraryDetail(analysis: entry.analysis, source: entry.source, entry: entry)
-        }
     }
+
+    private var collectionBar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack {
+                    collectionButton(nil)
+                    ForEach(VocabularyCollection.allCases) { collectionButton($0) }
+                }
+            }.fixedSize(horizontal: false, vertical: true)
+            if let collection {
+                Button("Мини-диалог: \(collection.title)", systemImage: "bubble.left.and.bubble.right") {
+                    do {
+                        try app.settings.setDialogueCollection(collection)
+                        app.dialogue.close()
+                        app.dialogueController.triggerNow()
+                    } catch { collectionError = AppError.message(for: error) }
+                }
+            }
+            if let collectionError { Text(collectionError).foregroundStyle(.red).font(.caption) }
+        }.padding(16).background(.bar)
+    }
+
     private func collectionButton(_ value: VocabularyCollection?) -> some View {
         Button { collection = value } label: {
             Label(value?.title ?? "Все", systemImage: value?.symbol ?? "square.grid.2x2")
