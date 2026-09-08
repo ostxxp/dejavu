@@ -13,8 +13,8 @@ test('Only HTTP pages outside excluded domains are eligible',()=>{
  assert.equal(normalizedDomain('https://example.com/path'),null);
 });
 test('Short useful expressions work without forcing all text to French',()=>{
- for(const text of ['du tout','leurs','en route','tu devrais','garent'])assert.equal(likelyFrench(text,{languages:[]}),true);
- assert.equal(likelyFrench('Good morning',{languages:[{language:'en',percentage:99}]}),false);
+ for(const text of ['du tout','leurs','en route','tu devrais','garent','mon mari'])assert.equal(likelyFrench(text,{languages:[]}),true);
+ assert.equal(likelyFrench('This is a longer English paragraph about everyday life.',{languages:[{language:'en',percentage:99}]}),false);
  assert.equal(likelyFrench('Nous apprenons ensemble.',{languages:[{language:'fr',percentage:95}]}),true);
 });
 test('Selection limits reject nontext, code, URLs and credential-shaped input',()=>{

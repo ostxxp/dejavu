@@ -75,10 +75,12 @@ test('Concurrent analyses keep ownership records for both documents',async()=>{
  assert.equal(h.session.issued[results[1].id].tab,2);
 });
 
-test('Unexpected browser errors are not exposed as raw technical text',async()=>{
+test('Language detection failure still allows an explicit short phrase without leaking errors',async()=>{
  const h=await harness();chrome.i18n.detectLanguage=async()=>{throw new Error('example internal details')};
- const result=await h.send({type:'CANDIDATE',text:'bonjour'});
- assert.equal(result.ok,false);assert.ok(!result.error.includes('internal details'));
+ const result=await h.send({type:'CANDIDATE',text:'mon mari'});
+ assert.equal(result.ok,true);assert.equal(result.candidate,true);assert.equal(h.calls.length,0);
+ assert.ok(!JSON.stringify(result).includes('internal details'));
+ assert.equal((await h.send({type:'ANALYZE',text:'mon mari',requestID:'short'})).ok,true);
 });
 
 test('Only popup can persist an allowed accent and content gets no credentials',async()=>{

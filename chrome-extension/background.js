@@ -146,7 +146,7 @@ async function dispatch(message, sender) {
   if (message.type === "CANDIDATE") {
     const text = cleanSelection(message.text);
     if (!text) return {ok: true, candidate: false};
-    const detection = await chrome.i18n.detectLanguage(text);
+    const detection = await chrome.i18n.detectLanguage(text).catch(() => null);
     return {ok: true, candidate: likelyFrench(text, detection)};
   }
   if (message.type === "CANCEL") {
@@ -156,7 +156,7 @@ async function dispatch(message, sender) {
   if (message.type === "ANALYZE") {
     const text = cleanSelection(message.text);
     if (!text || typeof message.requestID !== "string" || message.requestID.length > 100) return error("Выделите французское выражение до 4 000 символов.");
-    if (!likelyFrench(text, await chrome.i18n.detectLanguage(text))) return error("Не удалось распознать французский текст.");
+    // The explicit Analyze click is sufficient; do not reject a short phrase a second time.
     const requestKey = keyFor(sender, message.requestID);
     if (pending.size >= 2 || pending.has(requestKey)) return error("Дождитесь текущего разбора.");
     const controller = new AbortController();

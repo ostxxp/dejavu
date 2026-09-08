@@ -23,7 +23,9 @@ export function cleanSelection(value) {
 }
 export function likelyFrench(text, detection) {
   const known = /^(?:du tout|leurs?|en route|tu devrais|bonjour|bonsoir|salut|merci|au revoir|s'il vous plaît|s’il vous plaît|garent|devoir|ça va)$/i;
-  return known.test(text) || detection?.languages?.some(l => l.language === "fr" && l.percentage >= 60) === true;
+  // Language detection is unreliable for isolated words and short phrases.
+  const shortSelection = text.length <= 80 && text.trim().split(/\s+/).length <= 5;
+  return shortSelection || known.test(text) || detection?.languages?.some(l => l.language === "fr" && l.percentage >= 60) === true;
 }
 export function isAnalysis(value) {
   const object = v => v !== null && typeof v === "object" && !Array.isArray(v);
