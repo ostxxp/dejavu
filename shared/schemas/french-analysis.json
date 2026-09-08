@@ -150,6 +150,19 @@
         "string",
         "null"
       ]
+    },
+    "suggestedCollection": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "dates",
+        "fashion",
+        "travel",
+        "messages",
+        null
+      ]
     }
   },
   "required": [
@@ -166,7 +179,8 @@
     "chunks",
     "examples",
     "difficulty",
-    "naturalnessNotes"
+    "naturalnessNotes",
+    "suggestedCollection"
   ],
   "additionalProperties": false
 }

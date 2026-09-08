@@ -20,6 +20,7 @@ struct DialogueFeedback: Codable, Equatable, Sendable {
     let usefulPhrase: String
     let usefulTranslation: String
     let encouragement: String
+    var suggestedCollection: String? = nil
 
     func validated() throws -> Self {
         guard !usefulPhrase.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, usefulPhrase.count <= 400,
@@ -31,7 +32,7 @@ struct DialogueFeedback: Codable, Equatable, Sendable {
         return self
     }
     var phraseAnalysis: FrenchAnalysis {
-        FrenchAnalysis(original: usefulPhrase, translation: usefulTranslation, grammar: [], chunks: [], examples: [], difficulty: "A2")
+        FrenchAnalysis(original: usefulPhrase, translation: usefulTranslation, grammar: [], chunks: [], examples: [], difficulty: "A2", suggestedCollection: suggestedCollection)
     }
 }
 
@@ -92,9 +93,11 @@ struct DialogueFeedback: Codable, Equatable, Sendable {
         Используй обычные живые формулировки. Не добавляй искусственную похвалу вроде «Ты хорошо стремишься».
         encouragement — например «Мысль понятна.»; не повторяй уже показанный статус естественности.
         encouragement — короткая поддержка по-русски без баллов, процентов, оценок и выдуманных достижений.
+        suggestedCollection: тема usefulPhrase — dates (свидания), fashion (одежда), travel (путешествия),
+        messages (переписка и договорённости); если явной темы нет — null.
         Не выдавай медицинские или юридические рекомендации: это только языковая практика.
         """, name: "dialogue_feedback", schema: Self.schema(strings: ["usefulPhrase", "usefulTranslation", "encouragement"],
-            nullable: ["correctedVersion", "moreNaturalVersion", "mainIssue"], booleans: ["understood", "isNatural"]))
+            nullable: ["correctedVersion", "moreNaturalVersion", "mainIssue", "suggestedCollection"], booleans: ["understood", "isNatural"]))
         return try value.validated()
     }
 }

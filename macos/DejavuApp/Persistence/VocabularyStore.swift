@@ -64,6 +64,9 @@ import Observation
         } else {
             entry = try stageEncounter(analysis, source: source, now: .now)
         }
+        if !entry.savedByUser && entry.collectionRaw.isEmpty {
+            entry.collectionRaw = analysis.suggestedCollection.flatMap(VocabularyCollection.init(rawValue:))?.rawValue ?? ""
+        }
         entry.savedByUser = true
         if let collection { entry.collectionRaw = collection.rawValue }
         try PersistenceController.save(context)
@@ -77,6 +80,9 @@ import Observation
     }
 
     func update(_ entry: VocabularyEntry, saved: Bool, notes: String) throws {
+        if saved && !entry.savedByUser && entry.collectionRaw.isEmpty {
+            entry.collectionRaw = entry.analysis?.suggestedCollection.flatMap(VocabularyCollection.init(rawValue:))?.rawValue ?? ""
+        }
         entry.savedByUser = saved
         entry.notes = notes
         try PersistenceController.save(context)
@@ -87,6 +93,7 @@ import Observation
         let analysis = try analysis.validated()
         if let entry = try find(analysis.original) {
             var merged = entry.analysis ?? analysis
+            merged.suggestedCollection = analysis.suggestedCollection ?? merged.suggestedCollection
             merged.ipa = merged.ipa ?? analysis.ipa
             merged.lemma = merged.lemma ?? analysis.lemma
             merged.partOfSpeech = merged.partOfSpeech ?? analysis.partOfSpeech

@@ -3,6 +3,33 @@ import XCTest
 @testable import DejavuApp
 
 @MainActor final class PersistenceTests: XCTestCase {
+    func testAutomaticCollectionPreservesManualChoiceAndSupportsOldAnalysis() throws {
+        let container = try PersistenceController.makeContainer(inMemory: true)
+        let store = VocabularyStore(context: container.mainContext)
+        var analysis = Self.analysis("une robe")
+        analysis.suggestedCollection = "fashion"
+        let entry = try store.save(analysis, source: .chromePopup)
+        XCTAssertEqual(entry.collection, .fashion)
+        try store.setCollection(entry, collection: .dates)
+        _ = try store.save(analysis, source: .manual)
+        XCTAssertEqual(entry.collection, .dates)
+        try store.setCollection(entry, collection: nil)
+        _ = try store.save(analysis, source: .manual)
+        XCTAssertNil(entry.collection)
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(analysis)) as? [String: Any])
+        legacy.removeValue(forKey: "suggestedCollection")
+        let decoded = try JSONDecoder().decode(FrenchAnalysis.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(decoded.suggestedCollection)
+        analysis.original = "un billet"
+        analysis.suggestedCollection = "travel"
+        let history = try store.recordEncounter(analysis, source: .manual)
+        try store.update(history, saved: true, notes: "")
+        XCTAssertEqual(history.collection, .travel)
+        analysis.original = "bonjour"
+        analysis.suggestedCollection = "invalid"
+        XCTAssertNil(try store.save(analysis, source: .manual).collection)
+    }
+
     func testNormalizationPreservesFrenchSpelling() {
         XCTAssertEqual(ExpressionNormalizer.normalize("  L’ANNÉE\n prochaine  "), "l'année prochaine")
         XCTAssertEqual(ExpressionNormalizer.normalize("e\u{301}te\u{301}"), "été")

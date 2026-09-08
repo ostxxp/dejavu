@@ -15,6 +15,7 @@ struct FrenchAnalysis: Codable, Equatable, Sendable {
     var examples: [FrenchExample]
     var difficulty: String?
     var naturalnessNotes: String?
+    var suggestedCollection: String? = nil
 
     func validated() throws -> Self {
         guard !ExpressionNormalizer.normalize(original).isEmpty,
@@ -24,6 +25,9 @@ struct FrenchAnalysis: Codable, Equatable, Sendable {
             throw AppError.invalidResponse
         }
         var result = self
+        if let value = suggestedCollection, VocabularyCollection(rawValue: value) == nil {
+            result.suggestedCollection = nil
+        }
         result.ipa = Self.present(ipa)
         result.lemma = Self.present(lemma)
         result.partOfSpeech = Self.present(partOfSpeech)
