@@ -59,7 +59,7 @@ import Foundation
 
     private func route(_ request: BridgeRequest) async -> BridgeResponse {
         if request.path == "/v1/health", request.method == "GET" {
-            return .json(["status": "ok", "version": "1", "appVersion": "0.9.1"])
+            return .json(["status": "ok", "version": "1", "appVersion": "0.9.3"])
         }
         if request.path == "/v1/vocabulary", request.method == "GET" {
             do { return .json(try vocabulary.recognitionEntries()) }
